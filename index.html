@@ -175,7 +175,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .sig-verdict{
   font-family:'JetBrains Mono',monospace;
   font-weight:900;line-height:1;text-transform:uppercase;
-  font-size:clamp(52px,12vw,80px);letter-spacing:-0.03em;
+  font-size:clamp(32px,7vw,48px);letter-spacing:-0.02em;
 }
 .sig-verdict.buy{color:var(--buy);text-shadow:0 0 40px var(--buy-bg)}
 .sig-verdict.sell{color:var(--sell);text-shadow:0 0 40px var(--sell-bg)}
@@ -368,7 +368,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       <div class="mkt-cell"><div class="k">Rango Sesión</div><div class="v mono" id="mR">—</div></div>
     </div>
     <button class="btn-outline" id="analyzeBtn">
-      <span id="analyzeTxt">🤖 Analizar con IA</span>
+      <span id="analyzeTxt">🔮 Analizar con IA</span>
     </button>
   </div>
 
@@ -414,6 +414,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- FOOTER SIEMPRE VISIBLE -->
+  <div style="text-align:center;padding:20px 16px 8px;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--gold);font-weight:700;margin-bottom:8px;">🔮 No operar también es operar.</div>
+    <div style="font-size:11px;color:var(--text-lo);line-height:1.6;">⚠️ Las señales de SOLCLA SCANNER no constituyen asesoramiento financiero ni recomendaciones de inversión. Toda operación implica riesgo.</div>
   </div>
 
   <!-- ESTADÍSTICAS -->
@@ -703,6 +709,11 @@ function renderSignal(signal, saved) {
     </div>
     ` : ''}
 
+    ${isWait ? `
+    <div style="margin:0 24px 16px;padding:14px 16px;background:var(--wait-bg);border:1px solid var(--wait);border-radius:8px;text-align:center;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--gold);">🔮 No operar también es operar.</div>
+    </div>` : ''}
+
     <div class="ctx-section">
       ${signal.contexto ? `<div class="ctx-box"><strong>Contexto de Mercado</strong>${signal.contexto}</div>` : ''}
       ${signal.evitar   ? `<div class="evitar-box"><strong>⚠ Invalidación (Evitar si)</strong>${signal.evitar}</div>` : ''}
@@ -838,6 +849,8 @@ async function handleAnalyze() {
       $('outSuccessSection').classList.add('hidden');
       $('outCard').classList.remove('hidden');
       $('outCard').classList.add('fade-in');
+      // Scroll automático al formulario
+      setTimeout(() => $('outCard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
 
     const kind = sig.signal === 'COMPRA' ? 'buy' : sig.signal === 'VENTA' ? 'sell' : '';
