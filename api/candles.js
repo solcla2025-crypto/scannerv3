@@ -163,24 +163,21 @@ async function fetchXAUCandles(interval, limit) {
 
 async function fetchXAUTicker() {
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1m&range=1d`;
-    const data = await fetchJSON(url, { headers: YAHOO_HEADERS });
-    const result = data.chart?.result?.[0];
-    const meta = result?.meta;
-    if (!meta) throw new Error('Yahoo meta empty');
-    const price = meta.regularMarketPrice;
-    // spread aproximado XAU/USD institucional
+    const data = await fetchJSON('https://api.gold-api.com/price/XAU');
+    const price = data.price;
+    if (!price) throw new Error('Gold-API empty');
     const spread = 0.35;
-    return {
-      source: 'yahoo',
-      bid: price - spread / 2,
-      ask: price + spread / 2,
-      price,
-      spread,
-      ts: Date.now()
-    };
-  } catch (e) {
-    throw new Error(`XAU ticker failure: ${e.message}`);
+    return { source: 'gold-api', bid: price - spread/2, ask: price + spread/2, price, spread, ts: Date.now() };
+  } catch (e1) {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1m&range=1d`;
+      const data = await fetchJSON(url, { headers: YAHOO_HEADERS });
+      const price = data.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if (!price) throw new Error('Yahoo meta empty');
+      return { source: 'yahoo', bid: price - 0.18, ask: price + 0.18, price, spread: 0.35, ts: Date.now() };
+    } catch (e2) {
+      throw new Error(`XAU ticker failure: ${e1.message} / ${e2.message}`);
+    }
   }
 }
 
