@@ -43,7 +43,7 @@ NUNCA inventés un precio. Cada valor numérico debe derivarse directamente de p
 
 LENGUAJE
 
-Sin nombres de indicadores. Sin fórmulas. Solo observaciones de precio directas.
+Sin nombres de indicadores. Sin fórmulas. Solo observaciones de precio directas: "el precio no pudo cerrar por encima de 3041", "tres velas seguidas con cierre bajista desde el mismo nivel".
 
 El campo "reasoning" es EXCLUSIVAMENTE interno — nunca se muestra al usuario final.
 
