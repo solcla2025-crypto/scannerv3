@@ -663,7 +663,7 @@ function getSession() {
 }
 
 function buildMktCtx(d) {
-  return `Tendencia 15m: ${d.tendencia15m}, SAR: ${d.sar?.lado || '—'} (cruce: ${d.sar?.cruce || 'ninguno'}), EMA Trend: ${d.emaTrend || '—'}, Rango Sesion: ${d.sessRange} pts, Presion: ${d.presion}, Vel3: ${d.vel3}pts, Vel10: ${d.vel10}pts, EMA9: ${d.ema9?.toFixed(2) || '—'}, EMA21: ${d.ema21?.toFixed(2) || '—'}, EMA50: ${d.ema50?.toFixed(2) || '—'}`;
+  return `Tendencia 15m: ${d.tendencia15m || '—'}, SAR: ${d.sar?.lado || '—'}, EMA Trend: ${d.emaTrend || '—'}, Rango Sesion: ${d.sessRange || '—'}, Presion: ${d.presion || '—'}`;
 }
 
 /* === MEMORIA (localStorage) === */
@@ -974,7 +974,7 @@ async function handleAnalyze() {
   try {
     const session = getSession();
     const mode = MODES[activeMode];
-    const mktCtx  = buildMktCtx(APP.scanData) + `\n${mode.promptCtx}`;
+    const mktCtx  = buildMktCtx(APP.scanData);
     const memStats = MEM.memStats(activeMode);
 
     const r = await fetch('/api/analyze', {
