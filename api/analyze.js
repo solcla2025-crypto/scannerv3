@@ -61,7 +61,26 @@ function buildCandleBlock(candles) {
 }
 
 function buildMemBlock(stats) {
-  if (!stats || !Object.keys(stats).length) return '';
+  if (!stats) return '';
+
+  // Formato nuevo: agrupado por mode|signal|session|setup
+  if (stats.groups !== undefined) {
+    if (!stats.groups.length && !stats.recent?.total) return '';
+    const modeLabel = stats.mode === 'day' ? 'Day Trading' : 'Scalping';
+    let block = `\nMEMORIA SOLCLA\nÚltimos 30 días · Modo: ${modeLabel}\n\n`;
+    for (const g of stats.groups) {
+      block += `${g.signal} · ${g.session} · ${g.setup}\n`;
+      block += `${g.total} operaciones · ${g.wr}% WR · Confianza promedio ${g.avgConf}%\n\n`;
+    }
+    if (stats.recent?.total > 0) {
+      block += `Tendencia reciente (últimas ${stats.recent.total} ops):\n`;
+      block += `${stats.recent.wins} WIN · ${stats.recent.losses} LOSS\n`;
+    }
+    return block;
+  }
+
+  // Formato legacy (compatibilidad hacia atrás)
+  if (!Object.keys(stats).length) return '';
   let block = '\nMEMORIA ESTADÍSTICA (últimos 30 días):\n';
   for (const [sig, d] of Object.entries(stats)) {
     block += `  ${sig}: ${d.total} ops · ${d.wr}% win rate · confianza promedio ${d.avgConf}%\n`;
