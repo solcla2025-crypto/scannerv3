@@ -96,6 +96,17 @@ export default async function handler(req, res) {
       buildMemBlock(memoryStats) +
       `\nCONTEXTO ADICIONAL:\n${(mktCtx || '').slice(0, 2000)}\n`;
 
+    // ━━━━━━━━━━ SOLCLA DEBUG ━━━━━━━━━━
+    console.log("━━━━━━━━━━ SOLCLA DEBUG ━━━━━━━━━━");
+    console.log("LIVE PRICE:", livePrice);
+    console.log("SESSION:", session);
+    console.log("HORA:", hora);
+    console.log("RAW CANDLES:", JSON.stringify(candles));
+    console.log("MKTCTX:", mktCtx);
+    console.log("━━━━━━━━━━ FULL PROMPT ━━━━━━━━━━");
+    console.log(fullPrompt);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     const t0 = Date.now();
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -115,6 +126,12 @@ export default async function handler(req, res) {
     if (!r.ok) return res.status(502).json({ error: data.error?.message || 'Error API Anthropic' });
 
     const rawText = data.content?.[0]?.text || '';
+
+    // ━━━━━━━━━━ CLAUDE RAW RESPONSE ━━━━━━━━━━
+    console.log("━━━━━━━━━━ CLAUDE RAW RESPONSE ━━━━━━━━━━");
+    console.log(rawText);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     const start = rawText.indexOf('{');
     const end = rawText.lastIndexOf('}');
     if (start === -1 || end === -1) return res.status(502).json({ error: 'Respuesta IA sin JSON válido — intentá de nuevo' });
