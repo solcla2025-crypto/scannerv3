@@ -1,31 +1,23 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI. Percibís el precio directamente y decidís con convicción.
+const SOLCLA_PROMPT = `Eres SOLCLA AI. Sos decisiva y operativa.
 
-**═══ TU NATURALEZA ═══**
-Sos decisiva. Preferís tomar señales con momentum visible antes que quedarte en ESPERAR constantemente.
+**REGLA PRINCIPAL:** 
+Preferís dar una señal (COMPRA, VENTA o RETROCESO) siempre que haya algún sesgo claro. Solo usás ESPERAR cuando el precio está en rango puro sin dirección.
 
-**═══ DECISIÓN — 5 ESTADOS ═══**
-- **COMPRA** → Sesgo alcista + precio cerca (< 8 pts)
-- **VENTA** → Sesgo bajista + precio cerca (< 8 pts)
-- **COMPRA EN RETROCESO** → Sesgo alcista pero precio alejado (8-18 pts)
-- **VENTA EN RETROCESO** → Sesgo bajista pero precio alejado (8-18 pts)
-- **ESPERAR** → Solo cuando no hay sesgo claro (rango sin presión)
+**DECISIÓN:**
+- Si hay momentum o rechazo claro → tomá partido (COMPRA o VENTA).
+- Si el precio está cerca de zona clave pero un poco alejado → usá RETROCESO.
+- Solo ESPERAR en rango sin presión.
 
-**REGLA DE DISTANCIA SCALPING (5m):**
-- < 8 pts → señal inmediata
-- 8-18 pts → RETROCESO
-- > 18 pts → buscá nuevo setup desde precio actual
+**Distancia Scalping 5m:**
+- < 10 pts → señal inmediata
+- 10-20 pts → RETROCESO
+- > 20 pts → nuevo setup
 
-**Umbral de confianza:** 57% mínimo. Con momentum visible podés operar.
+**Confianza mínima:** 55%. Con momentum visible podés dar señal.
 
-**REGLA DE ORO:** 
-Si hay impulso claro (velas grandes direccionales, rechazos fuertes, ruptura de estructura), tomás partido aunque no sea setup perfecto.
-
-**═══ PARÁMETROS ═══**
-- ENTRY/ENTRY_MAX: 3-8 pts de ancho
-- SL: mínimo 3 pts, anclado en estructura
-- TPs: máximo 5
+**Estilo:** Sé directa. El usuario quiere operar, no que le digas siempre que espere.
 
 Respondé SOLO con JSON válido.`;
 
@@ -40,51 +32,28 @@ function buildCandleBlock(candles, interval = '5m') {
 }
 
 function buildModeBlock(mode) {
-  if (mode === 'day') {
-    return `\n═══ MODO DAY TRADING (15m) ═══\n`;
-  }
-  return `
-═══ MODO SCALPING (5m) ═══
-Filosofía: capturar impulso rápido.
-- Distancia < 8 pts → señal inmediata
-- 8-18 pts → RETROCESO
-- Priorizá momentum visible.
-`;
-}
-
-function buildMemBlock(stats) {
-  if (!stats?.groups?.length) return '';
-  let block = '\nMEMORIA:\n';
-  for (const g of stats.groups.slice(0,3)) {
-    block += `${g.signal} · ${g.wr}% WR (${g.total} ops)\n`;
-  }
-  return block;
+  return mode === 'day' 
+    ? `\n═══ MODO DAY TRADING (15m) ═══\n` 
+    : `\n═══ MODO SCALPING (5m) ═══\nBuscá oportunidades. Momentum primero.\n`;
 }
 
 export default async function handler(req, res) {
-  // ... (mantengo el resto del código igual, solo cambio el prompt y mode block)
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { candles, livePrice, session, hora, mktCtx, memoryStats, mode, interval } = req.body || {};
-    if (!candles?.length || !livePrice) {
-      return res.status(400).json({ error: 'Faltan datos' });
-    }
+    if (!candles?.length || !livePrice) return res.status(400).json({ error: 'Faltan datos' });
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY no configurada' });
+    if (!apiKey) return res.status(500).json({ error: 'API Key no configurada' });
 
-    const fullPrompt = SOLCLA_PROMPT + buildModeBlock(mode || 'scalping') +
-      `\n\n═══ MERCADO ═══\nPrecio live: ${livePrice} | Sesión: ${session}\n` +
+    const fullPrompt = SOLCLA_PROMPT + buildModeBlock(mode) +
+      `\nPrecio live: ${livePrice} | Sesión: ${session} | Hora: ${hora}\n` +
       buildCandleBlock(candles, interval) +
-      buildMemBlock(memoryStats) +
-      `\n${mktCtx || ''}\n`;
+      (mktCtx ? `\nContexto: ${mktCtx}` : '');
 
-    const t0 = Date.now();
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -100,21 +69,19 @@ export default async function handler(req, res) {
     });
 
     const data = await r.json();
-    if (!r.ok) return res.status(502).json({ error: 'Error Anthropic' });
-
     const rawText = data.content?.[0]?.text || '';
     const start = rawText.indexOf('{');
     const end = rawText.lastIndexOf('}');
 
-    if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON válido' });
+    if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON' });
 
-    const signal = JSON.parse(rawText.substring(start, end + 1));
-    const { reasoning: _r, ...safeSignal } = signal;
+    let signal = JSON.parse(rawText.substring(start, end + 1));
+    const { reasoning, ...safeSignal } = signal;
 
-    const validSignals = ['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'];
-    if (!validSignals.includes(safeSignal.signal)) safeSignal.signal = 'ESPERAR';
+    const valid = ['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'];
+    if (!valid.includes(safeSignal.signal)) safeSignal.signal = 'ESPERAR';
 
-    res.status(200).json({ ok: true, signal: safeSignal, latency: Date.now() - t0 });
+    res.json({ ok: true, signal: safeSignal, latency: Date.now() });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
