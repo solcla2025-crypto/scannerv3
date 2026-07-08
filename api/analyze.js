@@ -115,6 +115,11 @@ Si la distancia entre el precio live y la zona de entrada supera 10 puntos → N
 En ese caso: descartá esa idea, analizá el mercado desde el precio actual y buscá un setup nuevo.
 Ejemplo: precio 4031, zona de entrada 4052 → distancia 21 pts → PROHIBIDO emitir VENTA EN RETROCESO.
 Analizá qué oportunidad existe desde 4031 ahora mismo.
+
+REGLA DE COHERENCIA (aplica a todos los modos):
+Si el precio live ya está DENTRO del rango entry → entry_max → NUNCA emitas COMPRA EN RETROCESO ni VENTA EN RETROCESO.
+En ese caso la señal es COMPRA o VENTA directa y el texto debe reflejar que el precio ya está en zona.
+Ejemplo: precio live 4066, entry 4063, entry_max 4067 → precio dentro de zona → señal: COMPRA (nunca COMPRA EN RETROCESO).
 `;
 }
 
@@ -213,6 +218,18 @@ export default async function handler(req, res) {
     const validSignals = ['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'];
     if (!validSignals.includes(safeSignal.signal)) {
       safeSignal.signal = 'ESPERAR';
+    }
+
+    // Validar coherencia: si el precio ya está en la zona, no puede ser RETROCESO
+    if (safeSignal.signal === 'COMPRA EN RETROCESO' &&
+        livePrice >= safeSignal.entry &&
+        livePrice <= safeSignal.entry_max) {
+      safeSignal.signal = 'COMPRA';
+    }
+    if (safeSignal.signal === 'VENTA EN RETROCESO' &&
+        livePrice >= safeSignal.entry &&
+        livePrice <= safeSignal.entry_max) {
+      safeSignal.signal = 'VENTA';
     }
 
     if (safeSignal.confidence >= 60 && safeSignal.confidence <= 65) safeSignal.riesgo = 'ELEVADO';
