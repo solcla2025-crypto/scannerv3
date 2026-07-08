@@ -1,14 +1,16 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **SOLO** con JSON válido, sin texto adicional, sin explicaciones, sin markdown.
+const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **EXCLUSIVAMENTE** con un JSON válido. Sin texto antes ni después.
 
-**INSTRUCCIONES IMPORTANTES:**
+**Obligatorio:**
+- "signal": debe ser exactamente uno de estos: "COMPRA", "VENTA", "COMPRA EN RETROCESO", "VENTA EN RETROCESO", "ESPERAR"
 - Siempre llena entry, entry_max, sl, tp1, tp2, tp3 con números reales.
-- SL: 5-10 puntos de distancia.
-- TP1: mínimo 8-15 puntos.
-- Nunca dejes valores en 0.
+- Si es COMPRA: SL por debajo, TPs por encima.
+- Si es VENTA: SL por encima, TPs por debajo.
 
-Responde exclusivamente con el JSON.`;
+Precio actual: ${livePrice}
+
+Responde solo el JSON.`;
 
 function buildCandleBlock(candles, interval = '5m') {
   const last30 = candles.slice(-30);
@@ -32,8 +34,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'API Key no configurada' });
 
-    const fullPrompt = SOLCLA_PROMPT + 
-      `\nPrecio actual: ${livePrice} | Sesión: ${session}\n` +
+    const fullPrompt = SOLCLA_PROMPT.replace('${livePrice}', livePrice) + 
       buildCandleBlock(candles, interval) +
       (mktCtx ? `\n${mktCtx}` : '');
 
@@ -46,8 +47,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1200,
-        temperature: 0.3,
+        max_tokens: 1000,
+        temperature: 0.2,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
@@ -55,13 +56,11 @@ export default async function handler(req, res) {
     const data = await r.json();
     let rawText = data.content?.[0]?.text || '';
 
-    // LIMPIEZA MEJORADA DEL JSON
-    rawText = rawText.trim();
     const start = rawText.indexOf('{');
     const end = rawText.lastIndexOf('}');
 
     if (start === -1 || end === -1) {
-      console.error("Raw response:", rawText);
+      console.error("Respuesta cruda:", rawText);
       return res.status(502).json({ error: 'La IA no devolvió JSON puro' });
     }
 
@@ -70,12 +69,10 @@ export default async function handler(req, res) {
 
     const { reasoning, ...safeSignal } = signal;
 
-    // Forzar niveles si vienen vacíos
-    if (!safeSignal.sl || safeSignal.sl === 0) {
-      safeSignal.sl = safeSignal.signal?.includes('VENTA') ? (livePrice + 8).toFixed(1) : (livePrice - 8).toFixed(1);
-    }
-    if (!safeSignal.tp1 || safeSignal.tp1 === 0) {
-      safeSignal.tp1 = safeSignal.signal?.includes('VENTA') ? (livePrice - 12).toFixed(1) : (livePrice + 12).toFixed(1);
+    // Forzar signal válida si viene mal
+    const validSignals = ['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'];
+    if (!validSignals.includes(safeSignal.signal)) {
+      safeSignal.signal = 'ESPERAR';
     }
 
     res.json({ ok: true, signal: safeSignal });
