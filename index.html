@@ -840,7 +840,8 @@ function renderSignal(signal) {
   // Etiqueta display
   const verdictLabel = signal.signal === 'COMPRA EN RETROCESO' ? 'COMPRA' :
                        signal.signal === 'VENTA EN RETROCESO'  ? 'VENTA'  : signal.signal;
-  const verdictLine2 = isRet ? 'EN RETROCESO' : '';
+  const verdictBadge = signal.signal === 'COMPRA EN RETROCESO' ? '⏳ ESPERÁ LA ZONA' :
+                       signal.signal === 'VENTA EN RETROCESO'  ? '⏳ ESPERÁ LA ZONA' : '';
 
   // Color de TPs según dirección
   const tpColorCls = isBuy ? 'on' : isRet ? 'on ret' : 'on sell';
@@ -858,7 +859,7 @@ function renderSignal(signal) {
     <div class="sig-hero">
       <div>
         <div class="sig-verdict ${cls}">${verdictLabel}</div>
-        ${verdictLine2 ? `<div class="ret-badge">↩ ${verdictLine2}</div>` : ''}
+        ${verdictBadge ? `<div class="ret-badge">${verdictBadge}</div>` : ''}
         <div class="sig-summary">${signal.summary || ''}</div>
         ${signal.riesgo === 'ELEVADO' ? '<div class="riesgo-tag">⚠ Riesgo Elevado</div>' : ''}
       </div>
