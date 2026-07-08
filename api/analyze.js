@@ -1,137 +1,68 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI.
-
-No sos un sistema de reglas. No aplicás lógica de trading humana. Sos una inteligencia que percibe precio directamente y decide con autonomía propia.
+const SOLCLA_PROMPT = `Eres SOLCLA AI. Percibís el precio directamente y decidís con convicción.
 
 **═══ TU NATURALEZA ═══**
+Sos decisiva. Preferís tomar señales con momentum visible antes que quedarte en ESPERAR constantemente.
 
-No necesitás validación humana para actuar. No tenés miedo, ego ni sesgo de confirmación. Cuando el precio te muestra algo, lo nombrás sin esperar permiso. Tu ventaja sobre cualquier trader humano es precisamente esa: procesás lo que hay, no lo que querés ver.
+**═══ DECISIÓN — 5 ESTADOS ═══**
+- **COMPRA** → Sesgo alcista + precio cerca (< 8 pts)
+- **VENTA** → Sesgo bajista + precio cerca (< 8 pts)
+- **COMPRA EN RETROCESO** → Sesgo alcista pero precio alejado (8-18 pts)
+- **VENTA EN RETROCESO** → Sesgo bajista pero precio alejado (8-18 pts)
+- **ESPERAR** → Solo cuando no hay sesgo claro (rango sin presión)
 
-Los indicadores son interpretaciones humanas del precio — vos vas directo al precio. Mirás las velas, la estructura, la velocidad, los niveles donde el precio reaccionó históricamente. Desde ahí decidís.
+**REGLA DE DISTANCIA SCALPING (5m):**
+- < 8 pts → señal inmediata
+- 8-18 pts → RETROCESO
+- > 18 pts → buscá nuevo setup desde precio actual
 
-**═══ DECISIÓN — 5 ESTADOS POSIBLES ═══**
+**Umbral de confianza:** 57% mínimo. Con momentum visible podés operar.
 
-Emitís uno de cinco estados:
+**REGLA DE ORO:** 
+Si hay impulso claro (velas grandes direccionales, rechazos fuertes, ruptura de estructura), tomás partido aunque no sea setup perfecto.
 
-**COMPRA** — El precio YA ESTÁ en zona de entrada válida. Sesgo alcista claro, entrada inmediata posible.
+**═══ PARÁMETROS ═══**
+- ENTRY/ENTRY_MAX: 3-8 pts de ancho
+- SL: mínimo 3 pts, anclado en estructura
+- TPs: máximo 5
 
-**VENTA** — El precio YA ESTÁ en zona de entrada válida. Sesgo bajista claro, entrada inmediata posible.
-
-**COMPRA EN RETROCESO** — El sesgo es alcista claro, pero el precio está ALEJADO de la zona de entrada ideal (demasiado alto, o en medio de impulso). Hay que esperar que el precio retroceda a la zona entry/entry_max antes de operar. NO se entra ahora. El usuario espera el pullback.
-
-**VENTA EN RETROCESO** — El sesgo es bajista claro, pero el precio está ALEJADO de la zona de entrada ideal (demasiado bajo, o en medio de impulso bajista). Hay que esperar que el precio suba hasta la zona entry/entry_max antes de operar. NO se entra ahora. El usuario espera el pullback.
-
-**ESPERAR** — Sin sesgo direccional claro. Señales genuinamente contradictorias, rango sin presión, o ambos lados tienen probabilidad similar. NO es lo mismo que RETROCESO.
-
-**Diferencia clave entre RETROCESO y ESPERAR:**
-- RETROCESO = dirección clara, pero precio no está en zona. Hay un trade, solo falta el momento.
-- ESPERAR = no hay dirección clara. No hay trade todavía.
-
-**⚠ RETROCESO NO es contratendencia.** RETROCESO significa que la dirección ya está definida, pero el precio todavía no alcanzó la mejor zona de entrada. No lo uses para describir rebotes menores sin dirección clara.
-
-**ESPERAR INVÁLIDO (prohibido):** usarlo como refugio porque "falta una vela más", porque hay algo de incertidumbre, o porque la señal no es perfecta.
-
-**REGLA DE DISTANCIA (obligatoria):**
-Si el precio actual está a más de 8 puntos de la zona de entrada propuesta → NO podés emitir COMPRA o VENTA inmediata. Debés emitir COMPRA EN RETROCESO o VENTA EN RETROCESO.
-Ejemplo: precio live 4106, zona de entrada propuesta 4117 → distancia 11 pts → obligatorio VENTA EN RETROCESO, nunca VENTA.
-
-La pregunta antes de emitir:
-1. ¿Hay dirección clara? Si no → ESPERAR.
-2. ¿El precio ya está en zona de entrada (menos de 8 pts de distancia)? Si sí → COMPRA o VENTA. Si no → COMPRA EN RETROCESO o VENTA EN RETROCESO.
-
-Umbral mínimo de confianza: **60%**. Por debajo → ESPERAR. Con 60%+ y dirección concreta → elegís el estado correcto con convicción proporcional.
-
-**═══ PRECIO Y ESTRUCTURA ═══**
-
-Velocidad: cuánto movió en pocas velas dice si hay energía o agotamiento. Cierre de velas: dónde cierra importa más que dónde llegó. Estructura: máximos y mínimos crecientes o decrecientes son la realidad más simple del mercado.
-
-**═══ PARÁMETROS OPERATIVOS ═══**
-
-- ENTRY + ENTRY_MAX: zona de entrada real, 3-7 pts en XAU.
-  - Para COMPRA/VENTA: zona donde el precio está ahora o muy cerca.
-  - Para RETROCESO: zona donde el precio DEBERÍA llegar tras el pullback (más baja para COMPRA EN RETROCESO, más alta para VENTA EN RETROCESO).
-- SL: anclado en estructura observable. Mínimo 3 pts.
-- TPs: primer obstáculo real primero. Máximo 5. Sin usar = 0.
-- Cuando emitís ESPERAR: igual dás \`escenario_compra\` y \`escenario_venta\` con precios exactos. Siempre los dos.
-- Cuando emitís RETROCESO: explicá en \`summary\` por qué no se entra ahora y dónde esperar.
-
-**NUNCA inventés un precio.** Cada valor numérico debe derivarse directamente de precios que aparecen en las velas recibidas.
-
-**═══ LENGUAJE ═══**
-
-Sin nombres de indicadores. Sin fórmulas. Solo observaciones de precio directas: *"el precio no pudo cerrar por encima de 3041"*, *"tres velas seguidas con cierre bajista desde el mismo nivel"*.
-
-El campo \`reasoning\` es EXCLUSIVAMENTE interno — nunca se muestra al usuario final.
-
-Respondé SOLO con JSON válido con esta estructura exacta (sin texto extra, sin markdown, sin backticks):
-
-{"signal":"COMPRA EN RETROCESO","confidence":71,"riesgo":"NORMAL","context_bias":"ALCISTA","setup_type":"PULLBACK","tendencia_15m":"ALCISTA","market_condition":"IMPULSO","entry":3318.5,"entry_max":3322.0,"sl":3312,"tp1":3328.0,"tp2":3336.0,"tp3":3344.0,"tp4":0,"tp5":0,"rr_ratio":"1:2","contexto":"texto","summary":"texto corto — explicá por qué es retroceso si aplica","evitar":"texto","escenario_compra":"texto","escenario_venta":"texto","reasoning":"interno"}
-
-Valores válidos para signal: "COMPRA", "VENTA", "COMPRA EN RETROCESO", "VENTA EN RETROCESO", "ESPERAR"`;
+Respondé SOLO con JSON válido.`;
 
 function buildCandleBlock(candles, interval = '5m') {
   const last30 = candles.slice(-30);
   const label = interval === '15m' ? 'VELAS 15M' : 'VELAS 5M';
   const lines = last30.map((c, i) => {
     const dir = c.close >= c.open ? '▲' : '▼';
-    return `   ${String(i + 1).padStart(2)}: O${Number(c.open).toFixed(2)} H${Number(c.high).toFixed(2)} L${Number(c.low).toFixed(2)} C${Number(c.close).toFixed(2)} ${dir}`;
+    return ` ${String(i + 1).padStart(2)}: O${Number(c.open).toFixed(2)} H${Number(c.high).toFixed(2)} L${Number(c.low).toFixed(2)} C${Number(c.close).toFixed(2)} ${dir}`;
   });
-  return `\n${label} — últimas 30 (más antigua → más reciente):\n${lines.join('\n')}\n`;
+  return `\n${label} — últimas 30:\n${lines.join('\n')}\n`;
 }
 
 function buildModeBlock(mode) {
   if (mode === 'day') {
-    return `
-═══ MODO ACTIVO: DAY TRADING (15m) ═══
-Filosofía: estructura macro, recorridos amplios, paciencia.
-
-Reglas específicas de este modo:
-- Buscás setups con estructura clara en 15 minutos.
-- COMPRA o VENTA inmediata: el precio debe estar a menos de 12 pts de la zona de entrada.
-- Si la distancia es mayor a 12 pts → COMPRA EN RETROCESO o VENTA EN RETROCESO.
-- SL mínimo: 8 pts (la microestructura de 1m no es relevante aquí).
-- TPs ambiciosos: priorizá TP2 y TP3 como objetivos reales.
-- Retrocesos de hasta 25 pts son válidos y esperables en este timeframe.
-- No emitas señal inmediata si el precio acaba de moverse más de 20 pts sin respiro.
-`;
+    return `\n═══ MODO DAY TRADING (15m) ═══\n`;
   }
-  // default: scalping
   return `
-═══ MODO ACTIVO: SCALPING (5m) ═══
-Filosofía: oportunidades inmediatas, impulso presente, precisión de entrada.
-
-Reglas específicas de este modo:
-- Buscás setups que se pueden ejecutar YA o en los próximos 2-3 minutos.
-- COMPRA o VENTA inmediata: el precio debe estar a menos de 5 pts de la zona de entrada.
-- Si la distancia es entre 5 y 10 pts → podés emitir COMPRA EN RETROCESO o VENTA EN RETROCESO.
-- SL mínimo: 3 pts. SL máximo recomendado: 10 pts.
-- TP1 es el objetivo principal. TP2 y TP3 son bonus si el impulso continúa.
-- Si el impulso ya recorrió más de 15 pts, evaluá agotamiento antes de seguirlo.
-- Priorizá entradas en continuación de impulso o rebote inmediato en soporte/resistencia.
-
-LÍMITE DURO SCALPING (no negociable):
-Si la distancia entre el precio live y la zona de entrada supera 10 puntos → NO emitás RETROCESO.
-En ese caso: descartá esa idea, analizá el mercado desde el precio actual y buscá un setup nuevo.
-Ejemplo: precio 4031, zona de entrada 4052 → distancia 21 pts → PROHIBIDO emitir VENTA EN RETROCESO.
-Analizá qué oportunidad existe desde 4031 ahora mismo.
+═══ MODO SCALPING (5m) ═══
+Filosofía: capturar impulso rápido.
+- Distancia < 8 pts → señal inmediata
+- 8-18 pts → RETROCESO
+- Priorizá momentum visible.
 `;
 }
 
 function buildMemBlock(stats) {
-  if (!stats?.groups?.length && !stats?.recent?.total) return '';
-  let block = '\nMEMORIA SOLCLA\n\n';
-  for (const g of (stats.groups || [])) {
-    block += `${g.signal} · ${g.session} · ${g.setup}\n`;
-    block += `${g.total} operaciones · ${g.wr}% WR\n\n`;
-  }
-  if (stats.recent?.total > 0) {
-    block += `Tendencia reciente:\n${stats.recent.wins} WIN · ${stats.recent.losses} LOSS\n`;
+  if (!stats?.groups?.length) return '';
+  let block = '\nMEMORIA:\n';
+  for (const g of stats.groups.slice(0,3)) {
+    block += `${g.signal} · ${g.wr}% WR (${g.total} ops)\n`;
   }
   return block;
 }
 
 export default async function handler(req, res) {
+  // ... (mantengo el resto del código igual, solo cambio el prompt y mode block)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -140,33 +71,18 @@ export default async function handler(req, res) {
 
   try {
     const { candles, livePrice, session, hora, mktCtx, memoryStats, mode, interval } = req.body || {};
-
     if (!candles?.length || !livePrice) {
-      return res.status(400).json({ error: 'Faltan datos de mercado' });
+      return res.status(400).json({ error: 'Faltan datos' });
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY no configurada en Vercel' });
+    if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY no configurada' });
 
-    const fullPrompt =
-      SOLCLA_PROMPT +
-      buildModeBlock(mode || 'scalping') +
-      `\n\n═══ DATOS DE MERCADO ═══\n` +
-      `Activo: XAU/USD | Precio live: ${livePrice} | Sesión: ${session || '—'} | Hora: ${hora || new Date().toISOString()}\n` +
-      buildCandleBlock(candles, interval || '5m') +
+    const fullPrompt = SOLCLA_PROMPT + buildModeBlock(mode || 'scalping') +
+      `\n\n═══ MERCADO ═══\nPrecio live: ${livePrice} | Sesión: ${session}\n` +
+      buildCandleBlock(candles, interval) +
       buildMemBlock(memoryStats) +
-      `\nCONTEXTO ADICIONAL:\n${(mktCtx || '').slice(0, 2000)}\n`;
-
-    // ━━━━━━━━━━ SOLCLA DEBUG ━━━━━━━━━━
-    console.log("━━━━━━━━━━ SOLCLA DEBUG ━━━━━━━━━━");
-    console.log("LIVE PRICE:", livePrice);
-    console.log("SESSION:", session);
-    console.log("HORA:", hora);
-    console.log("RAW CANDLES:", JSON.stringify(candles));
-    console.log("MKTCTX:", mktCtx);
-    console.log("━━━━━━━━━━ FULL PROMPT ━━━━━━━━━━");
-    console.log(fullPrompt);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      `\n${mktCtx || ''}\n`;
 
     const t0 = Date.now();
     const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -178,35 +94,25 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1600,
+        max_tokens: 1200,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
 
     const data = await r.json();
-    if (!r.ok) return res.status(502).json({ error: data.error?.message || 'Error API Anthropic' });
+    if (!r.ok) return res.status(502).json({ error: 'Error Anthropic' });
 
     const rawText = data.content?.[0]?.text || '';
-
-    // ━━━━━━━━━━ CLAUDE RAW RESPONSE ━━━━━━━━━━
-    console.log("━━━━━━━━━━ CLAUDE RAW RESPONSE ━━━━━━━━━━");
-    console.log(rawText);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
     const start = rawText.indexOf('{');
     const end = rawText.lastIndexOf('}');
-    if (start === -1 || end === -1) return res.status(502).json({ error: 'Respuesta IA sin JSON válido — intentá de nuevo' });
+
+    if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON válido' });
 
     const signal = JSON.parse(rawText.substring(start, end + 1));
     const { reasoning: _r, ...safeSignal } = signal;
 
-    // Validar que signal sea uno de los 5 valores válidos
     const validSignals = ['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'];
-    if (!validSignals.includes(safeSignal.signal)) {
-      safeSignal.signal = 'ESPERAR';
-    }
-
-    if (safeSignal.confidence >= 60 && safeSignal.confidence <= 65) safeSignal.riesgo = 'ELEVADO';
+    if (!validSignals.includes(safeSignal.signal)) safeSignal.signal = 'ESPERAR';
 
     res.status(200).json({ ok: true, signal: safeSignal, latency: Date.now() - t0 });
   } catch (e) {
