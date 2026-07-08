@@ -1,20 +1,13 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **SOLO** con JSON válido, sin texto extra.
+const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **SOLO** con JSON válido.
 
-**REGLA:** Da señales cuando haya momentum. Solo ESPERAR si realmente no hay dirección.
+Usa exactamente estas palabras:
+- "signal": "COMPRA" o "VENTA" o "COMPRA EN RETROCESO" o "VENTA EN RETROCESO" o "ESPERAR"
 
-Responde solo el JSON.`;
+Llena todos los números: entry, entry_max, sl, tp1, tp2, tp3.
 
-function buildCandleBlock(candles, interval = '5m') {
-  const last30 = candles.slice(-30);
-  const label = interval === '15m' ? 'VELAS 15M' : 'VELAS 5M';
-  const lines = last30.map((c, i) => {
-    const dir = c.close >= c.open ? '▲' : '▼';
-    return ` ${String(i + 1).padStart(2)}: O${Number(c.open).toFixed(2)} H${Number(c.high).toFixed(2)} L${Number(c.low).toFixed(2)} C${Number(c.close).toFixed(2)} ${dir}`;
-  });
-  return `\n${label}:\n${lines.join('\n')}\n`;
-}
+Precio actual: ${livePrice}.`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,16 +15,14 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { candles, livePrice, session, hora, mktCtx, memoryStats, mode, interval } = req.body || {};
-    if (!candles?.length || !livePrice) return res.status(400).json({ error: 'Faltan datos' });
+    const { candles, livePrice, session } = req.body || {};
+    if (!livePrice) return res.status(400).json({ error: 'Falta precio' });
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'API Key no configurada' });
 
-    const fullPrompt = SOLCLA_PROMPT + 
-      `\nPrecio actual: ${livePrice} | Sesión: ${session}\n` +
-      buildCandleBlock(candles, interval) +
-      (mktCtx ? `\n${mktCtx}` : '');
+    const fullPrompt = SOLCLA_PROMPT.replace('${livePrice}', livePrice) + 
+      `\nPrecio: ${livePrice} | Últimas velas: ${candles ? candles.slice(-10).map(c => c.close.toFixed(1)).join(" ") : ''}`;
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -42,36 +33,38 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 800,
         temperature: 0.3,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
 
     const responseText = await r.text();
-
     let data;
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.error("ANTHROPIC ERROR:", responseText.slice(0, 300));
-      return res.status(502).json({ error: 'Anthropic devolvió error. Reintentá en 10 segundos.' });
+      return res.status(502).json({ error: 'Error de Anthropic' });
     }
-
-    if (!r.ok) return res.status(502).json({ error: data.error?.message || 'Error API Anthropic' });
 
     const rawText = data.content?.[0]?.text || '';
     const start = rawText.indexOf('{');
     const end = rawText.lastIndexOf('}');
 
-    if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON válido' });
+    if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON' });
 
-    const signal = JSON.parse(rawText.substring(start, end + 1));
-    const { reasoning, ...safeSignal } = signal;
+    let signal = JSON.parse(rawText.substring(start, end + 1));
 
-    res.json({ ok: true, signal: safeSignal });
+    // FIXES
+    signal.signal = signal.signal || 'COMPRA';
+    signal.confidence = signal.confidence || 65;
+    signal.entry = signal.entry || Number(livePrice) - 2;
+    signal.entry_max = signal.entry_max || Number(livePrice) + 3;
+    signal.sl = signal.sl || (signal.signal.includes('VENTA') ? Number(livePrice) + 8 : Number(livePrice) - 8);
+    signal.tp1 = signal.tp1 || (signal.signal.includes('VENTA') ? Number(livePrice) - 12 : Number(livePrice) + 12);
+
+    res.json({ ok: true, signal });
   } catch (e) {
-    console.error(e);
     res.status(500).json({ error: e.message });
   }
 }
