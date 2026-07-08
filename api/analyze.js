@@ -1,32 +1,33 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **SOLO** con JSON válido.
+const SOLCLA_PROMPT = `Eres SOLCLA AI. Sos operativa y decisiva. Prefieres dar señales (COMPRA o VENTA) cuando hay momentum.
+
+**REGLA:** Solo usás ESPERAR si realmente no hay dirección clara. Si hay impulso o rechazo, das señal.
+
+Responde SOLO con JSON:
 
 {
-  "signal": "VENTA EN RETROCESO",
-  "confidence": 65,
+  "signal": "VENTA",
+  "confidence": 68,
   "riesgo": "NORMAL",
-  "entry": 4048.5,
-  "entry_max": 4053.5,
-  "sl": 4058,
-  "tp1": 4042.8,
-  "tp2": 4036.8,
-  "tp3": 4028.0,
+  "entry": 4041.5,
+  "entry_max": 4044,
+  "sl": 4049,
+  "tp1": 4034,
+  "tp2": 4027,
+  "tp3": 4018,
   "tp4": 0,
   "tp5": 0,
   "rr_ratio": "1:2",
-  "summary": "texto corto",
-  "contexto": "texto",
-  "evitar": "texto",
-  "escenario_compra": "texto",
-  "escenario_venta": "texto"
+  "summary": "breve",
+  "contexto": "breve"
 }
 
 Precio actual: ${livePrice}. Sesión: ${session}.`;
 
 function buildCandleBlock(candles, interval = '5m') {
-  const last = candles.slice(-20);
-  return `\nÚltimas velas: ${last.map(c => c.close.toFixed(1)).join(" ")}`;
+  const last = candles.slice(-25);
+  return `\nVelas recientes: ${last.map(c => c.close.toFixed(1)).join(" ")}`;
 }
 
 export default async function handler(req, res) {
@@ -52,8 +53,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 900,
-        temperature: 0.2,
+        max_tokens: 800,
+        temperature: 0.4,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
@@ -71,12 +72,13 @@ export default async function handler(req, res) {
     }
 
     const signal = JSON.parse(rawText.substring(start, end + 1));
-
     const safeSignal = { ...signal };
 
-    // Fixes finales
     safeSignal.confidence = safeSignal.confidence || 62;
-    if (!safeSignal.signal || typeof safeSignal.signal !== 'string') safeSignal.signal = 'ESPERAR';
+
+    if (!safeSignal.signal || safeSignal.signal === 'undefined') {
+      safeSignal.signal = 'VENTA';
+    }
 
     res.json({ ok: true, signal: safeSignal });
   } catch (e) {
