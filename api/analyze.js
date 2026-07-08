@@ -1,21 +1,32 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **SOLO** con JSON válido, sin texto adicional.
+const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **SOLO** con JSON válido.
 
-**Obligatorio:**
-- "signal": "COMPRA", "VENTA", "COMPRA EN RETROCESO", "VENTA EN RETROCESO" o "ESPERAR"
-- Llena entry, entry_max, sl, tp1, tp2, tp3 con números reales.
+{
+  "signal": "VENTA EN RETROCESO",
+  "confidence": 65,
+  "riesgo": "NORMAL",
+  "entry": 4048.5,
+  "entry_max": 4053.5,
+  "sl": 4058,
+  "tp1": 4042.8,
+  "tp2": 4036.8,
+  "tp3": 4028.0,
+  "tp4": 0,
+  "tp5": 0,
+  "rr_ratio": "1:2",
+  "summary": "texto corto",
+  "contexto": "texto",
+  "evitar": "texto",
+  "escenario_compra": "texto",
+  "escenario_venta": "texto"
+}
 
-Responde solo el JSON.`;
+Precio actual: ${livePrice}. Sesión: ${session}.`;
 
 function buildCandleBlock(candles, interval = '5m') {
-  const last30 = candles.slice(-30);
-  const label = interval === '15m' ? 'VELAS 15M' : 'VELAS 5M';
-  const lines = last30.map((c, i) => {
-    const dir = c.close >= c.open ? '▲' : '▼';
-    return ` ${String(i + 1).padStart(2)}: O${Number(c.open).toFixed(2)} H${Number(c.high).toFixed(2)} L${Number(c.low).toFixed(2)} C${Number(c.close).toFixed(2)} ${dir}`;
-  });
-  return `\n${label}:\n${lines.join('\n')}\n`;
+  const last = candles.slice(-20);
+  return `\nÚltimas velas: ${last.map(c => c.close.toFixed(1)).join(" ")}`;
 }
 
 export default async function handler(req, res) {
@@ -30,10 +41,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'API Key no configurada' });
 
-    const fullPrompt = SOLCLA_PROMPT + 
-      `\nPrecio actual: ${livePrice} | Sesión: ${session}\n` +
-      buildCandleBlock(candles, interval) +
-      (mktCtx ? `\n${mktCtx}` : '');
+    const fullPrompt = SOLCLA_PROMPT.replace('${livePrice}', livePrice).replace('${session}', session) + buildCandleBlock(candles, interval);
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -44,8 +52,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1200,
-        temperature: 0.3,
+        max_tokens: 900,
+        temperature: 0.2,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
@@ -58,27 +66,17 @@ export default async function handler(req, res) {
     const end = rawText.lastIndexOf('}');
 
     if (start === -1 || end === -1) {
-      console.error("Raw response:", rawText);
-      return res.status(502).json({ error: 'La IA no devolvió JSON puro' });
+      console.error("Raw:", rawText);
+      return res.status(502).json({ error: 'Sin JSON' });
     }
 
-    const jsonStr = rawText.substring(start, end + 1);
-    let signal = JSON.parse(jsonStr);
+    const signal = JSON.parse(rawText.substring(start, end + 1));
 
-    const { reasoning, ...safeSignal } = signal;
+    const safeSignal = { ...signal };
 
-    // FIX undefined signal
-    if (!safeSignal.signal || safeSignal.signal === 'undefined') {
-      safeSignal.signal = 'ESPERAR';
-    }
-
-    // Forzar niveles
-    if (!safeSignal.sl || safeSignal.sl === 0) {
-      safeSignal.sl = safeSignal.signal?.includes('VENTA') ? (Number(livePrice) + 8).toFixed(1) : (Number(livePrice) - 8).toFixed(1);
-    }
-    if (!safeSignal.tp1 || safeSignal.tp1 === 0) {
-      safeSignal.tp1 = safeSignal.signal?.includes('VENTA') ? (Number(livePrice) - 12).toFixed(1) : (Number(livePrice) + 12).toFixed(1);
-    }
+    // Fixes finales
+    safeSignal.confidence = safeSignal.confidence || 62;
+    if (!safeSignal.signal || typeof safeSignal.signal !== 'string') safeSignal.signal = 'ESPERAR';
 
     res.json({ ok: true, signal: safeSignal });
   } catch (e) {
