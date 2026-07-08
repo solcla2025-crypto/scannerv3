@@ -9,10 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-/* ================================================================
-   SOLCLA SCANNER · Sistema de diseño con tema oscuro / claro
-   ================================================================ */
-
 [data-theme="dark"] {
   --bg:        #0B0A1A;
   --bg-card:   #13112A;
@@ -31,6 +27,8 @@
   --sell-bg:   rgba(217,84,84,0.12);
   --wait:      #D4A84B;
   --wait-bg:   rgba(212,168,75,0.12);
+  --ret:       #F59E0B;
+  --ret-bg:    rgba(245,158,11,0.12);
   --shadow:    rgba(0,0,0,0.6);
 }
 
@@ -52,6 +50,8 @@
   --sell-bg:   rgba(184,48,48,0.10);
   --wait:      #B57D15;
   --wait-bg:   rgba(181,125,21,0.10);
+  --ret:       #D97706;
+  --ret-bg:    rgba(217,119,6,0.10);
   --shadow:    rgba(0,0,0,0.12);
 }
 
@@ -129,57 +129,70 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* === BUTTONS === */
 .btn-gold{
-  padding:12px 24px;border-radius:8px;
-  font-weight:700;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
+  padding:14px 28px;border-radius:10px;
+  font-weight:700;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;
   background:linear-gradient(180deg,var(--gold) 0%,var(--gold-dim) 100%);
   color:#FFFFFF;
-  box-shadow:0 4px 14px rgba(192,132,252,0.35);
+  box-shadow:0 4px 20px rgba(192,132,252,0.45);
   transition:transform .1s,box-shadow .15s,opacity .15s;white-space:nowrap;
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
 }
-.btn-gold:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 20px rgba(192,132,252,0.5)}
+.btn-gold:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(192,132,252,0.6)}
 .btn-gold:active:not(:disabled){transform:none}
 .btn-gold:disabled{opacity:0.5;cursor:not-allowed}
 
 .btn-outline{
-  width:100%;padding:13px;border-radius:8px;
-  font-weight:700;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
-  border:1px solid var(--border-md);background:var(--bg-inset);color:var(--text-mid);
+  width:100%;padding:11px;border-radius:8px;
+  font-weight:600;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;
+  border:1px solid var(--border);background:transparent;color:var(--text-lo);
   transition:all .15s;
 }
-.btn-outline:hover:not(:disabled){border-color:var(--gold-dim);color:var(--gold)}
-.btn-outline:disabled{opacity:0.5;cursor:not-allowed}
+.btn-outline:hover:not(:disabled){border-color:var(--border-md);color:var(--text-mid)}
+.btn-outline:disabled{opacity:0.4;cursor:not-allowed}
 
 /* === SCAN CARD === */
 .scan-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .scan-row h2{font-size:15px;font-weight:600;margin-bottom:2px}
 .scan-row p{font-size:12px;color:var(--text-mid)}
 
-/* === MARKET DATA === */
-.market-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-@media(min-width:500px){.market-grid{grid-template-columns:repeat(4,1fr)}}
-.mkt-cell{background:var(--bg-inset);border:1px solid var(--border);border-radius:8px;padding:12px}
-.mkt-cell .k{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-lo);margin-bottom:5px;font-weight:600}
-.mkt-cell .v{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px}
+/* === MARKET DATA — solo 2 celdas === */
+.market-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.mkt-cell{background:var(--bg-inset);border:1px solid var(--border);border-radius:8px;padding:14px}
+.mkt-cell .k{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-lo);margin-bottom:6px;font-weight:600}
+.mkt-cell .v{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px}
 .mkt-cell .v.g{color:var(--buy)}
 .mkt-cell .v.r{color:var(--sell)}
 .mkt-cell .v.a{color:var(--wait)}
+.mkt-cell .v.p{color:var(--gold)}
 
 /* === SIGNAL CARD === */
 .sig-card{background:var(--bg-card);border:2px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s,background .25s}
 .sig-card.buy{border-color:var(--buy)}
 .sig-card.sell{border-color:var(--sell)}
 .sig-card.wait{border-color:var(--wait)}
+.sig-card.buy-ret{border-color:var(--ret);border-style:dashed}
+.sig-card.sell-ret{border-color:var(--ret);border-style:dashed}
 
 .sig-hero{padding:28px 24px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
 
 .sig-verdict{
   font-family:'JetBrains Mono',monospace;
   font-weight:900;line-height:1;text-transform:uppercase;
-  font-size:clamp(32px,7vw,48px);letter-spacing:-0.02em;
+  font-size:clamp(24px,6vw,40px);letter-spacing:-0.02em;
 }
 .sig-verdict.buy{color:var(--buy);text-shadow:0 0 40px var(--buy-bg)}
 .sig-verdict.sell{color:var(--sell);text-shadow:0 0 40px var(--sell-bg)}
 .sig-verdict.wait{color:var(--wait);text-shadow:0 0 40px var(--wait-bg)}
+.sig-verdict.buy-ret{color:var(--ret);text-shadow:0 0 30px var(--ret-bg)}
+.sig-verdict.sell-ret{color:var(--ret);text-shadow:0 0 30px var(--ret-bg)}
+
+.ret-badge{
+  display:inline-flex;align-items:center;gap:5px;margin-top:8px;
+  padding:4px 10px;border-radius:20px;
+  border:1px solid var(--ret);background:var(--ret-bg);
+  color:var(--ret);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+}
+
 .sig-summary{font-size:14px;color:var(--text-mid);margin-top:8px;max-width:380px;line-height:1.5}
 .riesgo-tag{
   display:inline-flex;align-items:center;gap:4px;
@@ -202,6 +215,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .conf-fill.buy{background:linear-gradient(90deg,var(--buy),#A8E6C8)}
 .conf-fill.sell{background:linear-gradient(90deg,var(--sell),#F0A0A0)}
 .conf-fill.wait{background:linear-gradient(90deg,var(--wait),#EDD08A)}
+.conf-fill.buy-ret{background:linear-gradient(90deg,var(--ret),#FCD34D)}
+.conf-fill.sell-ret{background:linear-gradient(90deg,var(--ret),#FCD34D)}
 .conf-min{font-size:9px;color:var(--text-lo);text-align:right;margin-top:4px}
 
 /* Levels */
@@ -211,17 +226,32 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .lv-cell .v{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px}
 .lv-cell .v.r{color:var(--sell)}
 .lv-cell .v.g{color:var(--buy)}
+.lv-cell .v.ret{color:var(--ret)}
+
+/* Zona espera retroceso */
+.ret-zone-box{
+  margin:0 24px 16px;padding:14px 16px;
+  background:var(--ret-bg);border:1px solid var(--ret);border-radius:8px;
+  font-size:12px;color:var(--text);line-height:1.6;
+}
+.ret-zone-box strong{color:var(--ret);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;display:block;margin-bottom:4px}
 
 /* TPs */
 .tp-section{padding:0 24px 18px}
 .tp-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .tp-cell{border-radius:6px;padding:10px 6px;text-align:center;font-family:'JetBrains Mono',monospace;border:1px solid var(--border);background:var(--bg-inset)}
 .tp-cell.on{background:var(--buy-bg);border-color:var(--buy)}
+.tp-cell.on.sell{background:var(--sell-bg);border-color:var(--sell)}
+.tp-cell.on.ret{background:var(--ret-bg);border-color:var(--ret)}
 .tp-cell.z{opacity:0.3}
 .tp-cell .tl{font-size:9px;color:var(--text-lo);letter-spacing:0.1em;text-transform:uppercase}
 .tp-cell.on .tl{color:var(--buy)}
+.tp-cell.on.sell .tl{color:var(--sell)}
+.tp-cell.on.ret .tl{color:var(--ret)}
 .tp-cell .tv{font-size:13px;font-weight:700;color:var(--text);margin-top:3px}
 .tp-cell.on .tv{color:var(--buy)}
+.tp-cell.on.sell .tv{color:var(--sell)}
+.tp-cell.on.ret .tv{color:var(--ret)}
 
 /* Context */
 .ctx-section{padding:0 24px 18px;display:flex;flex-direction:column;gap:10px}
@@ -297,6 +327,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .hs.buy{color:var(--buy)}
 .hs.sell{color:var(--sell)}
 .hs.wait{color:var(--wait)}
+.hs.ret{color:var(--ret)}
 .ho{font-weight:700;margin-left:auto}
 .ho.win{color:var(--buy)}
 .ho.loss{color:var(--sell)}
@@ -325,6 +356,20 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .mode-badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:5px;font-weight:600;letter-spacing:0.08em;vertical-align:middle}
 .mode-badge.scalping{background:var(--buy-bg);color:var(--buy)}
 .mode-badge.day{background:rgba(79,150,209,0.15);color:#4F96D1}
+
+/* === ASIA BANNER === */
+.asia-banner{
+  margin-bottom:14px;padding:16px 18px;
+  background:linear-gradient(135deg,rgba(212,168,75,0.10),rgba(192,132,252,0.06));
+  border:1px solid rgba(212,168,75,0.35);border-radius:10px;
+}
+.asia-banner-title{
+  display:flex;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;
+}
+.asia-banner-body{font-size:12px;color:var(--text-mid);line-height:1.7}
+.asia-banner-footer{font-size:10px;color:var(--text-lo);margin-top:6px;font-style:italic}
 </style>
 </head>
 <body>
@@ -368,10 +413,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       </div>
     </div>
 
-    <!-- Banner sesión Asia -->
-    <div id="asiaBanner" class="hidden" style="margin-bottom:14px;padding:14px 16px;background:var(--wait-bg);border:1px solid var(--wait);border-radius:8px;">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px;">🔮 Filosofía SOLCLA</div>
-      <div style="font-size:12px;color:var(--text-mid);line-height:1.6;">Preferimos calidad antes que cantidad.<br>Durante la sesión asiática solemos esperar mercados con menor participación y menos oportunidades de alta calidad para el scalping.<br><span style="color:var(--text-lo);font-size:11px">La decisión final siempre depende de vos.</span></div>
+    <!-- Banner sesión Asia — nuevo diseño -->
+    <div id="asiaBanner" class="asia-banner hidden">
+      <div class="asia-banner-title">
+        <span style="font-size:16px">🌍</span>
+        Filosofía SOLCLA
+      </div>
+      <div class="asia-banner-body">
+        Calidad sobre cantidad.<br>
+        Sesión Asiática: menor liquidez, mayor prudencia.<br>
+        <span style="color:var(--gold);font-weight:700">🔮 No operar también es operar. La disciplina es parte del plan.</span>
+      </div>
+      <div class="asia-banner-footer">La decisión final siempre es tuya.</div>
     </div>
 
     <div class="scan-row" style="position:relative;overflow:hidden;min-height:90px;">
@@ -381,50 +434,47 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
           <h2 id="scanTitle" style="font-size:17px;font-weight:700;">Monitor de Mercado</h2>
         </div>
         <p id="scanSubtitle" style="color:var(--text-mid);font-size:12px;margin-bottom:14px;">Escáner de acción de precio y métricas institucionales</p>
-        <button class="btn-gold" id="scanBtn">🔮 Escanear Mercado</button>
+        <button class="btn-outline" id="scanBtn" style="width:auto;padding:9px 18px;font-size:10px;">⟳ Actualizar Mercado</button>
       </div>
-      <!-- Velas decorativas mejoradas -->
+      <!-- Velas decorativas -->
       <svg style="position:absolute;right:0px;bottom:0px;opacity:0.35" width="180" height="120" viewBox="0 0 180 120" fill="none">
-        <!-- Vela 1 -->
         <line x1="18" y1="105" x2="18" y2="88" stroke="#7C3AED" stroke-width="1.5"/>
         <rect x="13" y="90" width="10" height="12" rx="1" fill="#7C3AED"/>
-        <line x1="18" y1="102" x2="18" y2="95" stroke="#7C3AED" stroke-width="1.5"/>
-        <!-- Vela 2 -->
         <line x1="38" y1="98" x2="38" y2="78" stroke="#7C3AED" stroke-width="1.5"/>
         <rect x="33" y="82" width="10" height="13" rx="1" fill="#7C3AED"/>
-        <!-- Vela 3 -->
         <line x1="58" y1="90" x2="58" y2="68" stroke="#8B2BE2" stroke-width="1.5"/>
         <rect x="53" y="72" width="10" height="15" rx="1" fill="#8B2BE2"/>
-        <!-- Vela 4 bajista pequeña -->
         <line x1="78" y1="78" x2="78" y2="60" stroke="#9333EA" stroke-width="1.5"/>
         <rect x="73" y="63" width="10" height="11" rx="1" fill="#6D28D9"/>
-        <!-- Vela 5 -->
         <line x1="98" y1="68" x2="98" y2="44" stroke="#9D4FE8" stroke-width="1.5"/>
         <rect x="93" y="48" width="10" height="16" rx="1" fill="#9D4FE8"/>
-        <!-- Vela 6 -->
         <line x1="118" y1="55" x2="118" y2="30" stroke="#B06EF0" stroke-width="1.5"/>
         <rect x="113" y="34" width="10" height="17" rx="1" fill="#B06EF0"/>
-        <!-- Vela 7 -->
         <line x1="138" y1="42" x2="138" y2="18" stroke="#C084FC" stroke-width="1.5"/>
         <rect x="133" y="22" width="10" height="16" rx="1" fill="#C084FC"/>
-        <!-- Vela 8 -->
         <line x1="158" y1="30" x2="158" y2="8" stroke="#DDA6FF" stroke-width="1.5"/>
         <rect x="153" y="12" width="10" height="14" rx="1" fill="#DDA6FF"/>
       </svg>
     </div>
   </div>
 
-  <!-- DATOS DE MERCADO -->
+  <!-- DATOS DE MERCADO — solo Tendencia + Sesión -->
   <div class="card hidden" id="mktCard">
     <div class="section-label">Datos de mercado</div>
-    <div class="market-grid">
-      <div class="mkt-cell"><div class="k">Tendencia 15m</div><div class="v" id="mT">—</div></div>
-      <div class="mkt-cell"><div class="k">Dirección SAR</div><div class="v" id="mS">—</div></div>
-      <div class="mkt-cell"><div class="k">Presión</div><div class="v" id="mP">—</div></div>
-      <div class="mkt-cell"><div class="k">Rango Sesión</div><div class="v mono" id="mR">—</div></div>
+    <div class="market-grid-2">
+      <div class="mkt-cell">
+        <div class="k">Tendencia 15m</div>
+        <div class="v" id="mT">—</div>
+      </div>
+      <div class="mkt-cell">
+        <div class="k">Sesión Activa</div>
+        <div class="v p" id="mSess">—</div>
+      </div>
     </div>
-    <button class="btn-outline" id="analyzeBtn">
-      <span id="analyzeTxt">🔮 Analizar con IA</span>
+    <!-- Botón principal: RE-ANALIZAR con IA -->
+    <button class="btn-gold" id="analyzeBtn">
+      <span style="font-size:18px">🔮</span>
+      <span id="analyzeTxt">Analizar con IA</span>
     </button>
   </div>
 
@@ -458,7 +508,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
           <label>Notas (Opcional)</label>
           <textarea id="outNotes" placeholder="Notas sobre la ejecución..."></textarea>
         </div>
-        <button class="btn-gold" id="outSubmit" style="align-self:flex-end">✓ Finalizar Registro</button>
+        <button class="btn-gold" id="outSubmit" style="width:auto;align-self:flex-end;padding:12px 24px">✓ Finalizar Registro</button>
       </div>
     </div>
     <div id="outSuccessSection" class="hidden">
@@ -522,35 +572,25 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 </main>
 
-
 <div class="toast-stack" id="toasts"></div>
 
 <script>
 "use strict";
-// =============================================================================
-//  SOLCLA SCANNER · Motor cuantitativo + IA
-//  Vanilla JS · localStorage · Vercel-ready
-// =============================================================================
 
-/* === CONFIG === */
 const STORAGE_KEY = 'solcla.scanner.v2';
 
 const MODES = {
   scalping: {
-    label: 'Scalping',
-    interval: '5m',
-    limit: 200,
+    label: 'Scalping', interval: '5m', limit: 200,
     candlesLabel: 'VELAS 5M',
     subtitle: 'Escáner de acción de precio y métricas institucionales',
     promptCtx: 'Modo SCALPING — timeframe 5 minutos. Operaciones rápidas con stops ajustados a microestructura. Priorizar precisión de entrada y momentum inmediato.',
   },
   day: {
-    label: 'Day Trading',
-    interval: '15m',
-    limit: 150,
+    label: 'Day Trading', interval: '15m', limit: 150,
     candlesLabel: 'VELAS 15M',
     subtitle: 'Análisis de estructura de mercado · Operaciones de mayor recorrido',
-    promptCtx: 'Modo DAY TRADING — timeframe 15 minutos. Operaciones de mayor recorrido con estructura macro. SL más amplio basado en estructura, TPs más ambiciosos. Priorizar calidad del setup y alineación de tendencia macro.',
+    promptCtx: 'Modo DAY TRADING — timeframe 15 minutos. Operaciones de mayor recorrido con estructura macro. SL más amplio basado en estructura, TPs más ambiciosos.',
   }
 };
 
@@ -558,12 +598,9 @@ let activeMode = 'scalping';
 
 function setMode(mode) {
   activeMode = mode;
-  // Toggle UI
   document.getElementById('modeScalping').classList.toggle('active', mode === 'scalping');
   document.getElementById('modeDay').classList.toggle('active', mode === 'day');
-  // Actualizar subtítulo
   document.getElementById('scanSubtitle').textContent = MODES[mode].subtitle;
-  // Resetear datos de mercado si cambia el modo
   document.getElementById('mktCard').classList.add('hidden');
   document.getElementById('sigWrapper').classList.add('hidden');
   document.getElementById('outCard').classList.add('hidden');
@@ -586,7 +623,6 @@ function calcSAR(candles, step = 0.03, maxStep = 0.2) {
   let ep   = bull ? candles[0].high : candles[0].low;
   let af   = step;
   const sars = [sar];
-
   for (let i = 1; i < candles.length; i++) {
     const p = candles[i - 1], c = candles[i];
     let ns = sar + af * (ep - sar);
@@ -601,7 +637,6 @@ function calcSAR(candles, step = 0.03, maxStep = 0.2) {
     sar = ns;
     sars.push(parseFloat(sar.toFixed(4)));
   }
-
   const sarNow = sars[sars.length - 1];
   const lastPx = candles[candles.length - 1].close;
   const lado   = lastPx > sarNow ? 'ALCISTA' : 'BAJISTA';
@@ -622,8 +657,6 @@ function analyzeCandles(candles) {
   const ema200 = calcEMA(closes, 200);
   const emaTrend = ema9 && ema21 ? (ema9 > ema21 ? 'ALCISTA' : 'BAJISTA') : null;
   const sar = calcSAR(candles);
-
-  // Tendencia macro via EMAs
   const last = closes[closes.length - 1];
   let tendencia15m = 'LATERAL';
   if (ema21 && ema50) {
@@ -631,8 +664,6 @@ function analyzeCandles(candles) {
     else if (last < ema21 && last < ema50 && ema21 < ema50) tendencia15m = 'BAJISTA';
     else tendencia15m = 'POSIBLE CAMBIO DE TENDENCIA';
   }
-
-  // Presión corporal últimas 3 velas
   const l3 = candles.slice(-3);
   let brAvg = 0;
   for (const c of l3) {
@@ -641,16 +672,11 @@ function analyzeCandles(candles) {
   }
   brAvg /= l3.length;
   const presion = brAvg >= 0.65 ? 'ALTA' : brAvg >= 0.35 ? 'MEDIA' : 'BAJA';
-
-  // Rango sesión
   const sessHigh = Math.max(...candles.map(c => c.high));
   const sessLow  = Math.min(...candles.map(c => c.low));
   const sessRange = parseFloat((sessHigh - sessLow).toFixed(2));
-
-  // Velocidad
   const vel3  = closes.length >= 3  ? parseFloat(Math.abs(closes[closes.length-1] - closes[closes.length-3]).toFixed(2))  : 0;
   const vel10 = closes.length >= 10 ? parseFloat(Math.abs(closes[closes.length-1] - closes[closes.length-10]).toFixed(2)) : 0;
-
   return { tendencia15m, sar, emaTrend, presion, sessRange, sessHigh, sessLow, vel3, vel10, ema9, ema21, ema50, ema200 };
 }
 
@@ -666,7 +692,7 @@ function buildMktCtx(d) {
   return `Tendencia 15m: ${d.tendencia15m || '—'}, SAR: ${d.sar?.lado || '—'}, EMA Trend: ${d.emaTrend || '—'}, Rango Sesion: ${d.sessRange || '—'}, Presion: ${d.presion || '—'}`;
 }
 
-/* === MEMORIA (localStorage) === */
+/* === MEMORIA === */
 const MEM = {
   load() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"signals":[]}'); }
@@ -714,13 +740,8 @@ const MEM = {
     const d = this.load();
     const cut = Date.now() - 30 * 24 * 3600 * 1000;
     const closed = d.signals.filter(s =>
-      s.time > cut &&
-      s.signal !== 'ESPERAR' &&
-      s.outcome &&
-      s.mode === currentMode
+      s.time > cut && s.signal !== 'ESPERAR' && s.outcome && s.mode === currentMode
     );
-
-    // Agrupar por signal|session|setup_type
     const groups = {};
     for (const s of closed) {
       const setup = s.setup_type || 'DESCONOCIDO';
@@ -730,32 +751,25 @@ const MEM = {
       if (s.outcome?.startsWith('TP')) groups[key].wins++;
       groups[key].confSum += s.confidence || 0;
     }
-
-    // Solo grupos con 3+ operaciones
     const filtered = Object.values(groups)
       .filter(g => g.total >= 3)
       .sort((a, b) => b.total - a.total)
       .map(g => ({
-        signal: g.signal,
-        session: g.session,
-        setup: g.setup,
-        total: g.total,
-        wr: Math.round(g.wins / g.total * 100),
+        signal: g.signal, session: g.session, setup: g.setup,
+        total: g.total, wr: Math.round(g.wins / g.total * 100),
         avgConf: Math.round(g.confSum / g.total)
       }));
-
-    // Tendencia reciente (últimas 5 ops cerradas)
     const last5 = closed.slice(0, 5);
-    const rWins  = last5.filter(s => s.outcome?.startsWith('TP')).length;
-    const rLoss  = last5.filter(s => s.outcome === 'SL').length;
-
-    return { mode: currentMode, groups: filtered, recent: { wins: rWins, losses: rLoss, total: last5.length } };
+    return {
+      mode: currentMode, groups: filtered,
+      recent: { wins: last5.filter(s => s.outcome?.startsWith('TP')).length, losses: last5.filter(s => s.outcome === 'SL').length, total: last5.length }
+    };
   },
 
   recent() { return this.load().signals.slice(0, 40); }
 };
 
-/* === UI === */
+/* === UI helpers === */
 function toast(msg, type = '') {
   const el = document.createElement('div');
   el.className = 'toast ' + type;
@@ -763,10 +777,7 @@ function toast(msg, type = '') {
   document.getElementById('toasts').appendChild(el);
   setTimeout(() => el.remove(), 4500);
 }
-
 function $(id) { return document.getElementById(id); }
-
-function setCls(el, cls) { el.className = cls; }
 
 function colorVal(v) {
   if (!v) return '';
@@ -796,11 +807,13 @@ function renderStats() {
   el.innerHTML = list.map(s => {
     const d = new Date(s.time);
     const date = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
-    const sc  = s.signal === 'COMPRA' ? 'buy' : s.signal === 'VENTA' ? 'sell' : 'wait';
+    const isRet = s.signal?.includes('EN RETROCESO');
+    const sc  = s.signal === 'COMPRA' ? 'buy' : s.signal === 'VENTA' ? 'sell' : isRet ? 'ret' : 'wait';
     let oc = 'pend', ot = 'Pendiente';
     if (s.outcome) { oc = s.outcome.startsWith('TP') ? 'win' : s.outcome === 'SL' ? 'loss' : 'be'; ot = s.outcome; }
+    const shortLabel = s.signal === 'COMPRA EN RETROCESO' ? 'COMPRA↩' : s.signal === 'VENTA EN RETROCESO' ? 'VENTA↩' : s.signal;
     return `<div class="hist-item">
-      <span class="hs ${sc}">${s.signal}</span>
+      <span class="hs ${sc}">${shortLabel}</span>
       <span class="hm">${s.session} · ${date}</span>
       <span class="mono" style="font-size:10px;color:var(--text-lo)">${s.entry ? Number(s.entry).toFixed(1) : '—'}</span>
       <span class="ho ${oc}">${ot}</span>
@@ -808,15 +821,34 @@ function renderStats() {
   }).join('');
 }
 
-function renderSignal(signal, saved) {
-  const cls = signal.signal === 'COMPRA' ? 'buy' : signal.signal === 'VENTA' ? 'sell' : 'wait';
+/* === RENDER SEÑAL === */
+function sigClass(signal) {
+  if (signal === 'COMPRA') return 'buy';
+  if (signal === 'VENTA') return 'sell';
+  if (signal === 'COMPRA EN RETROCESO') return 'buy-ret';
+  if (signal === 'VENTA EN RETROCESO') return 'sell-ret';
+  return 'wait';
+}
+
+function renderSignal(signal) {
+  const cls = sigClass(signal.signal);
   const isWait = signal.signal === 'ESPERAR';
+  const isRet  = signal.signal === 'COMPRA EN RETROCESO' || signal.signal === 'VENTA EN RETROCESO';
+  const isBuy  = signal.signal === 'COMPRA' || signal.signal === 'COMPRA EN RETROCESO';
   const isAsia = getSession() === 'ASIA';
+
+  // Etiqueta display
+  const verdictLabel = signal.signal === 'COMPRA EN RETROCESO' ? 'COMPRA' :
+                       signal.signal === 'VENTA EN RETROCESO'  ? 'VENTA'  : signal.signal;
+  const verdictLine2 = isRet ? 'EN RETROCESO' : '';
+
+  // Color de TPs según dirección
+  const tpColorCls = isBuy ? 'on' : isRet ? 'on ret' : 'on sell';
 
   const tpCells = [1,2,3,4,5].map(i => {
     const v = signal[`tp${i}`];
     const on = v && v > 0;
-    return `<div class="tp-cell ${on ? 'on' : 'z'}">
+    return `<div class="tp-cell ${on ? (isBuy ? 'on' : isRet ? 'on ret' : 'on sell') : 'z'}">
       <div class="tl">TP${i}</div>
       <div class="tv">${on ? Number(v).toFixed(1) : '—'}</div>
     </div>`;
@@ -825,7 +857,8 @@ function renderSignal(signal, saved) {
   return `<div class="sig-card ${cls} fade-in">
     <div class="sig-hero">
       <div>
-        <div class="sig-verdict ${cls}">${signal.signal}</div>
+        <div class="sig-verdict ${cls}">${verdictLabel}</div>
+        ${verdictLine2 ? `<div class="ret-badge">↩ ${verdictLine2}</div>` : ''}
         <div class="sig-summary">${signal.summary || ''}</div>
         ${signal.riesgo === 'ELEVADO' ? '<div class="riesgo-tag">⚠ Riesgo Elevado</div>' : ''}
       </div>
@@ -836,11 +869,18 @@ function renderSignal(signal, saved) {
       </div>
     </div>
 
+    ${isRet ? `
+    <div class="ret-zone-box">
+      <strong>⏳ Esperá el retroceso para entrar</strong>
+      Esta señal identifica la dirección del mercado, pero el precio <strong>aún no llegó a la zona de entrada</strong>.
+      Esperá que el precio retroceda a la zona indicada antes de operar. Entrar antes invalida el setup.
+    </div>` : ''}
+
     ${!isWait ? `
     <div class="levels-grid">
       <div class="lv-cell">
-        <div class="k">Zona de Entrada</div>
-        <div class="v">${Number(signal.entry||0).toFixed(1)} → ${Number(signal.entry_max||0).toFixed(1)}</div>
+        <div class="k">Zona de Entrada${isRet ? ' (al retroceder)' : ''}</div>
+        <div class="v ${isRet ? 'ret' : ''}">${Number(signal.entry||0).toFixed(1)} → ${Number(signal.entry_max||0).toFixed(1)}</div>
       </div>
       <div class="lv-cell">
         <div class="k">Stop Loss</div>
@@ -860,14 +900,14 @@ function renderSignal(signal, saved) {
 
     ${isAsia ? `
     <div style="margin:0 24px 16px;padding:12px 16px;background:rgba(212,168,75,0.08);border:1px solid rgba(212,168,75,0.3);border-radius:8px;">
-      <div style="font-size:11px;font-weight:700;color:var(--wait);margin-bottom:4px;letter-spacing:0.1em;text-transform:uppercase;">🔮 Recomendación de SOLCLA</div>
-      <div style="font-size:12px;color:var(--text-mid);line-height:1.6;">La sesión asiática suele presentar menor liquidez y movimientos menos consistentes para estrategias de scalping. Esta señal puede tener una probabilidad inferior a la habitual.<br><span style="color:var(--text-lo);font-size:11px">La decisión final siempre depende de vos.</span></div>
+      <div style="font-size:11px;font-weight:700;color:var(--wait);margin-bottom:4px;letter-spacing:0.1em;text-transform:uppercase;">🌍 Sesión Asiática</div>
+      <div style="font-size:12px;color:var(--text-mid);line-height:1.6;">Menor liquidez. Esta señal puede tener probabilidad inferior a la habitual.<br><span style="color:var(--text-lo);font-size:11px">La decisión final siempre es tuya.</span></div>
     </div>` : ''}
 
     <div class="ctx-section">
       ${signal.contexto ? `<div class="ctx-box"><strong>Contexto de Mercado</strong>${signal.contexto}</div>` : ''}
       ${signal.evitar   ? `<div class="evitar-box"><strong>⚠ Invalidación (Evitar si)</strong>${signal.evitar}</div>` : ''}
-      ${isWait && (signal.escenario_compra || signal.escenario_venta) ? `
+      ${(isWait || isRet) && (signal.escenario_compra || signal.escenario_venta) ? `
       <div class="sc-grid">
         ${signal.escenario_compra ? `<div class="sc-box g"><strong>Escenario Compra</strong>${signal.escenario_compra}</div>` : ''}
         ${signal.escenario_venta  ? `<div class="sc-box r"><strong>Escenario Venta</strong>${signal.escenario_venta}</div>`  : ''}
@@ -882,14 +922,7 @@ function renderSignal(signal, saved) {
 }
 
 /* === APP STATE === */
-const APP = {
-  candles: null,
-  scanData: null,
-  livePrice: null,
-  prevPrice: null,
-  signalId: null,
-  currentSignal: null
-};
+const APP = { candles: null, scanData: null, livePrice: null, prevPrice: null, signalId: null, currentSignal: null };
 
 /* === TICKER === */
 async function fetchTicker() {
@@ -919,7 +952,7 @@ function tick() {
   const sess = getSession();
   $('clockSess').textContent = sess;
   $('hdrSess').textContent = sess;
-  // Mostrar/ocultar banner Asia
+  if ($('mSess')) $('mSess').textContent = sess;
   const banner = $('asiaBanner');
   if (banner) banner.classList.toggle('hidden', sess !== 'ASIA');
 }
@@ -928,55 +961,47 @@ function tick() {
 async function handleScan() {
   const btn = $('scanBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Escaneando...';
-
+  btn.textContent = '⟳ Escaneando...';
   try {
     const mode = MODES[activeMode];
     const r = await fetch(`/api/candles?asset=XAU&interval=${mode.interval}&limit=${mode.limit}`);
     const d = await r.json();
     if (!d.ok || !d.candles?.length) throw new Error('No se pudieron obtener velas');
-
     APP.candles = d.candles;
     APP.livePrice = APP.livePrice || d.candles[d.candles.length - 1].close;
-
     const a = analyzeCandles(APP.candles);
     APP.scanData = a;
 
-    const mT = $('mT'), mS = $('mS'), mP = $('mP');
-    mT.textContent = a.tendencia15m;   mT.className = 'v ' + colorVal(a.tendencia15m);
-    mS.textContent = a.sar?.lado||'—'; mS.className = 'v ' + colorVal(a.sar?.lado);
-    mP.textContent = a.presion;        mP.className = 'v ' + colorVal(a.presion);
-    $('mR').textContent = a.sessRange + ' pts';
+    const mT = $('mT');
+    mT.textContent = a.tendencia15m;
+    mT.className = 'v ' + colorVal(a.tendencia15m);
+    if ($('mSess')) $('mSess').textContent = getSession();
 
     $('mktCard').classList.remove('hidden');
     $('mktCard').classList.add('fade-in');
-    toast('Mercado escaneado correctamente');
+    toast('Mercado actualizado');
   } catch (e) {
     toast('Error al escanear: ' + e.message, 'err');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '⟳ Re-escanear';
+    btn.textContent = '⟳ Actualizar Mercado';
   }
 }
 
 /* === ANALIZAR CON IA === */
 async function handleAnalyze() {
-  if (!APP.candles || !APP.scanData) { toast('Primero escaneá el mercado', 'err'); return; }
-
+  if (!APP.candles || !APP.scanData) { toast('Primero actualizá el mercado', 'err'); return; }
   const btn = $('analyzeBtn'), txt = $('analyzeTxt');
   btn.disabled = true;
-  txt.innerHTML = '<span class="spinner"></span>Procesando modelo...';
-
+  txt.textContent = 'Analizando...';
   $('sigWrapper').classList.add('hidden');
   $('sigWrapper').innerHTML = '';
   $('outCard').classList.add('hidden');
-
   try {
     const session = getSession();
     const mode = MODES[activeMode];
     const mktCtx  = buildMktCtx(APP.scanData);
     const memStats = MEM.memStats(activeMode);
-
     const r = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -987,17 +1012,13 @@ async function handleAnalyze() {
         mktCtx, memoryStats: memStats
       })
     });
-
     const data = await r.json();
     if (!data.ok || !data.signal) throw new Error(data.error || 'Error en análisis IA');
-
     const sig = data.signal;
     APP.currentSignal = sig;
     APP.signalId = MEM.addSignal(sig, APP.livePrice, session, activeMode);
-
-    $('sigWrapper').innerHTML = renderSignal(sig, true);
+    $('sigWrapper').innerHTML = renderSignal(sig);
     $('sigWrapper').classList.remove('hidden');
-
     if (sig.signal !== 'ESPERAR') {
       $('outResult').value = 'TP1';
       $('outPips').value = '';
@@ -1006,18 +1027,17 @@ async function handleAnalyze() {
       $('outSuccessSection').classList.add('hidden');
       $('outCard').classList.remove('hidden');
       $('outCard').classList.add('fade-in');
-      // Scroll automático al formulario
       setTimeout(() => $('outCard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
-
-    const kind = sig.signal === 'COMPRA' ? 'buy' : sig.signal === 'VENTA' ? 'sell' : '';
-    toast(`${sig.signal} · Confianza ${sig.confidence}%${data.latency ? ` · ${data.latency}ms` : ''}`, kind);
+    const kind = sig.signal === 'COMPRA' || sig.signal === 'COMPRA EN RETROCESO' ? 'buy' :
+                 sig.signal === 'VENTA'  || sig.signal === 'VENTA EN RETROCESO'  ? 'sell' : '';
+    toast(`${sig.signal} · ${sig.confidence}%${data.latency ? ` · ${data.latency}ms` : ''}`, kind);
     renderStats();
   } catch (e) {
     toast('Error IA: ' + e.message, 'err');
   } finally {
     btn.disabled = false;
-    txt.innerHTML = '🤖 Re-analizar';
+    txt.textContent = 'Analizar con IA';
   }
 }
 
@@ -1029,17 +1049,17 @@ function copySignal() {
   const now = new Date();
   const hora = `${String(now.getUTCHours()).padStart(2,'0')}:${String(now.getUTCMinutes()).padStart(2,'0')}`;
   const isWait = sig.signal === 'ESPERAR';
-  const sigEmoji = sig.signal === 'COMPRA' ? '🟢' : sig.signal === 'VENTA' ? '🔴' : '⏳';
-
+  const isRet  = sig.signal?.includes('EN RETROCESO');
+  const sigEmoji = (sig.signal === 'COMPRA' || sig.signal === 'COMPRA EN RETROCESO') ? '🟢' :
+                   (sig.signal === 'VENTA'  || sig.signal === 'VENTA EN RETROCESO')  ? '🔴' : '⏳';
   let text = `━━━━━━━━━━━━━━━━━━━━━━\n🔮 SOLCLA SCANNER V3\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-  text += `🧠 Motor: SOLCLA Core v3\n\n`;
   text += `📈 Activo: XAU/USD\n`;
-  text += `${sigEmoji} Señal: ${sig.signal}\n\n`;
-
+  text += `${sigEmoji} Señal: ${sig.signal}\n`;
+  if (isRet) text += `⏳ Esperá el retroceso antes de entrar.\n`;
+  text += `\n`;
   if (!isWait) {
     text += `🎯 Zona de Entrada: ${Number(sig.entry||0).toFixed(2)} → ${Number(sig.entry_max||0).toFixed(2)}\n`;
     text += `🛑 Stop Loss: ${sig.sl || '—'}\n\n`;
-    text += `🎯 Objetivos\n`;
     [1,2,3,4,5].forEach(i => {
       const v = sig[`tp${i}`];
       text += `💰 TP${i}: ${v && v > 0 ? Number(v).toFixed(2) : '—'}\n`;
@@ -1050,37 +1070,25 @@ function copySignal() {
     if (sig.escenario_compra) text += `📌 Escenario Compra:\n${sig.escenario_compra}\n\n`;
     if (sig.escenario_venta)  text += `📌 Escenario Venta:\n${sig.escenario_venta}\n\n`;
   }
-
   text += `📊 Confianza: ${sig.confidence >= 75 ? '🟢' : sig.confidence >= 60 ? '🟡' : '🔴'} ${sig.confidence}%\n`;
   text += `⚖️ Riesgo: ${sig.riesgo || 'NORMAL'}\n`;
   if (sig.tendencia_15m) text += `📈 Tendencia 15m: ${sig.tendencia_15m}\n`;
   if (sig.setup_type && sig.setup_type !== 'NINGUNO') text += `🔄 Setup: ${sig.setup_type}\n`;
-  text += `\n🕒 Sesión: ${session}\n`;
-  text += `⏰ Hora: ${hora} UTC\n`;
-
-  if (!isWait && sig.evitar) {
-    text += `\n🚫 La señal pierde validez si:\n${sig.evitar}\n`;
-  }
-
-  text += `\n━━━━━━━━━━━━━━━━━━━━━━\n`;
-  text += `🔮 Generado por SOLCLA Scanner V3\n\n`;
-  text += `⚠️ Este análisis se basa en probabilidades del mercado.\nNo constituye asesoramiento financiero.\nOperá siempre con una adecuada gestión del riesgo y bajo tu propia responsabilidad.\n`;
-  text += `━━━━━━━━━━━━━━━━━━━━━━`;
-
+  text += `\n🕒 Sesión: ${session}\n⏰ Hora: ${hora} UTC\n`;
+  if (!isWait && sig.evitar) text += `\n🚫 Invalida si:\n${sig.evitar}\n`;
+  text += `\n━━━━━━━━━━━━━━━━━━━━━━\n🔮 Generado por SOLCLA Scanner V3\n⚠️ No constituye asesoramiento financiero.\n━━━━━━━━━━━━━━━━━━━━━━`;
   navigator.clipboard.writeText(text)
-    .then(() => toast('✓ Señal copiada al portapapeles', 'buy'))
-    .catch(() => toast('Error al copiar — intentá de nuevo', 'err'));
+    .then(() => toast('✓ Señal copiada', 'buy'))
+    .catch(() => toast('Error al copiar', 'err'));
 }
 
 /* === REGISTRAR === */
 $('outSubmit').addEventListener('click', () => {
   if (!APP.signalId) return;
-  const result = $('outResult').value;
-  const pips   = $('outPips').value;
-  MEM.addOutcome(APP.signalId, result, pips);
+  MEM.addOutcome(APP.signalId, $('outResult').value, $('outPips').value);
   $('outFormSection').classList.add('hidden');
   $('outSuccessSection').classList.remove('hidden');
-  toast('Resultado ' + result + ' registrado. Memoria actualizada.', 'buy');
+  toast('Resultado registrado. Memoria actualizada.', 'buy');
   renderStats();
 });
 
@@ -1101,7 +1109,6 @@ $('themeBtn').addEventListener('click', () => {
 /* === INIT === */
 $('scanBtn').addEventListener('click', handleScan);
 $('analyzeBtn').addEventListener('click', handleAnalyze);
-
 initTheme();
 tick();
 setInterval(tick, 1000);
