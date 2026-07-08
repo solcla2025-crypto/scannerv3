@@ -80,6 +80,44 @@ function buildCandleBlock(candles, interval = '5m') {
   return `\n${label} — últimas 30 (más antigua → más reciente):\n${lines.join('\n')}\n`;
 }
 
+function buildModeBlock(mode) {
+  if (mode === 'day') {
+    return `
+═══ MODO ACTIVO: DAY TRADING (15m) ═══
+Filosofía: estructura macro, recorridos amplios, paciencia.
+
+Reglas específicas de este modo:
+- Buscás setups con estructura clara en 15 minutos.
+- COMPRA o VENTA inmediata: el precio debe estar a menos de 12 pts de la zona de entrada.
+- Si la distancia es mayor a 12 pts → COMPRA EN RETROCESO o VENTA EN RETROCESO.
+- SL mínimo: 8 pts (la microestructura de 1m no es relevante aquí).
+- TPs ambiciosos: priorizá TP2 y TP3 como objetivos reales.
+- Retrocesos de hasta 25 pts son válidos y esperables en este timeframe.
+- No emitas señal inmediata si el precio acaba de moverse más de 20 pts sin respiro.
+`;
+  }
+  // default: scalping
+  return `
+═══ MODO ACTIVO: SCALPING (5m) ═══
+Filosofía: oportunidades inmediatas, impulso presente, precisión de entrada.
+
+Reglas específicas de este modo:
+- Buscás setups que se pueden ejecutar YA o en los próximos 2-3 minutos.
+- COMPRA o VENTA inmediata: el precio debe estar a menos de 5 pts de la zona de entrada.
+- Si la distancia es entre 5 y 10 pts → podés emitir COMPRA EN RETROCESO o VENTA EN RETROCESO.
+- SL mínimo: 3 pts. SL máximo recomendado: 10 pts.
+- TP1 es el objetivo principal. TP2 y TP3 son bonus si el impulso continúa.
+- Si el impulso ya recorrió más de 15 pts, evaluá agotamiento antes de seguirlo.
+- Priorizá entradas en continuación de impulso o rebote inmediato en soporte/resistencia.
+
+LÍMITE DURO SCALPING (no negociable):
+Si la distancia entre el precio live y la zona de entrada supera 10 puntos → NO emitás RETROCESO.
+En ese caso: descartá esa idea, analizá el mercado desde el precio actual y buscá un setup nuevo.
+Ejemplo: precio 4031, zona de entrada 4052 → distancia 21 pts → PROHIBIDO emitir VENTA EN RETROCESO.
+Analizá qué oportunidad existe desde 4031 ahora mismo.
+`;
+}
+
 function buildMemBlock(stats) {
   if (!stats?.groups?.length && !stats?.recent?.total) return '';
   let block = '\nMEMORIA SOLCLA\n\n';
@@ -101,7 +139,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { candles, livePrice, session, hora, mktCtx, memoryStats, interval } = req.body || {};
+    const { candles, livePrice, session, hora, mktCtx, memoryStats, mode, interval } = req.body || {};
 
     if (!candles?.length || !livePrice) {
       return res.status(400).json({ error: 'Faltan datos de mercado' });
@@ -112,6 +150,7 @@ export default async function handler(req, res) {
 
     const fullPrompt =
       SOLCLA_PROMPT +
+      buildModeBlock(mode || 'scalping') +
       `\n\n═══ DATOS DE MERCADO ═══\n` +
       `Activo: XAU/USD | Precio live: ${livePrice} | Sesión: ${session || '—'} | Hora: ${hora || new Date().toISOString()}\n` +
       buildCandleBlock(candles, interval || '5m') +
