@@ -1009,7 +1009,9 @@ async function handleAnalyze() {
         candles: APP.candles.slice(-30),
         livePrice: APP.livePrice,
         session, hora: new Date().toISOString(),
-        mktCtx, memoryStats: memStats
+        mktCtx, memoryStats: memStats,
+        mode: activeMode,
+        interval: MODES[activeMode].interval
       })
     });
     const data = await r.json();
