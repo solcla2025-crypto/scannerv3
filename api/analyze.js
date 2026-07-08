@@ -1,37 +1,11 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Responde **ÚNICAMENTE** con un objeto JSON válido. Nada más. Ni introducción, ni explicación.
+const SOLCLA_PROMPT = `Responde **SOLO** con JSON válido. Sin ninguna palabra más.
 
-{
-  "signal": "COMPRA",
-  "confidence": 68,
-  "riesgo": "NORMAL",
-  "entry": 4041.5,
-  "entry_max": 4044.0,
-  "sl": 4036.0,
-  "tp1": 4050.0,
-  "tp2": 4057.0,
-  "tp3": 4065.0,
-  "tp4": 0,
-  "tp5": 0,
-  "rr_ratio": "1:2.5",
-  "summary": "breve",
-  "contexto": "breve",
-  "evitar": "breve",
-  "escenario_compra": "breve",
-  "escenario_venta": "breve"
-}
+Ejemplo exacto:
+{"signal":"VENTA","confidence":64,"riesgo":"NORMAL","entry":4042,"entry_max":4044,"sl":4049,"tp1":4034,"tp2":4027,"tp3":4018,"tp4":0,"tp5":0,"rr_ratio":"1:2","summary":"caída fuerte","contexto":"precio rechazó resistencia","evitar":"si sube por encima de 4055","escenario_compra":"rebote fuerte","escenario_venta":"continuación bajista","reasoning":"interno"}
 
-Precio actual: ${livePrice}. Sesión: ${session || 'NEW YORK'}.`;
-
-function buildCandleBlock(candles, interval = '5m') {
-  const last = candles.slice(-25);
-  const lines = last.map((c, i) => {
-    const dir = c.close >= c.open ? '▲' : '▼';
-    return `${String(i+1).padStart(2)}: C${Number(c.close).toFixed(1)}`;
-  });
-  return `\nÚltimas velas: ${lines.join(" | ")}`;
-}
+Precio live: ${livePrice}. Usa este formato exacto.`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,7 +19,8 @@ export default async function handler(req, res) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'API Key no configurada' });
 
-    const fullPrompt = SOLCLA_PROMPT.replace('${livePrice}', livePrice) + buildCandleBlock(candles, interval);
+    const fullPrompt = SOLCLA_PROMPT.replace('${livePrice}', livePrice) + 
+      `\nÚltimas velas: ${candles.slice(-15).map(c => c.close.toFixed(1)).join(', ')}`;
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -56,38 +31,33 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 800,
-        temperature: 0.3,
+        max_tokens: 600,
+        temperature: 0.1,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
 
     const data = await r.json();
-    let raw = data.content?.[0]?.text || '';
+    let rawText = data.content?.[0]?.text || '';
 
-    // LIMPIEZA AGRESIVA
-    raw = raw.replace(/```json|```/g, '').trim();
-    let start = raw.indexOf('{');
-    let end = raw.lastIndexOf('}');
+    // LIMPIEZA EXTREMA
+    rawText = rawText.replace(/A server.*/g, '').trim();
+    const start = rawText.indexOf('{');
+    const end = rawText.lastIndexOf('}');
 
     if (start === -1 || end === -1) {
-      console.error("Raw IA:", raw);
-      return res.status(502).json({ error: 'No se encontró JSON válido' });
+      console.error("Respuesta cruda de Claude:", rawText);
+      return res.status(502).json({ error: 'Claude no devolvió JSON' });
     }
 
-    const jsonStr = raw.substring(start, end + 1);
+    const jsonStr = rawText.substring(start, end + 1);
     const signal = JSON.parse(jsonStr);
 
-    const { reasoning, ...safeSignal } = signal;
+    const { reasoning, ...safeSignal } = signal || {};
 
-    // Fallbacks
-    if (!safeSignal.signal || !['COMPRA','VENTA','COMPRA EN RETROCESO','VENTA EN RETROCESO','ESPERAR'].includes(safeSignal.signal)) {
-      safeSignal.signal = 'ESPERAR';
-    }
-
-    res.json({ ok: true, signal: safeSignal });
+    res.json({ ok: true, signal: safeSignal || { signal: 'ESPERAR', confidence: 50 } });
   } catch (e) {
-    console.error("Error:", e);
+    console.error(e);
     res.status(500).json({ error: e.message });
   }
 }
