@@ -3,8 +3,8 @@ export const config = { maxDuration: 30 };
 const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **SOLO** con JSON válido, sin texto adicional.
 
 **Obligatorio:**
-- "signal" debe ser exactamente: "COMPRA", "VENTA", "COMPRA EN RETROCESO", "VENTA EN RETROCESO" o "ESPERAR"
-- Llena siempre entry, entry_max, sl, tp1, tp2, tp3 con números.
+- "signal": "COMPRA", "VENTA", "COMPRA EN RETROCESO", "VENTA EN RETROCESO" o "ESPERAR"
+- Llena entry, entry_max, sl, tp1, tp2, tp3 con números reales.
 
 Responde solo el JSON.`;
 
@@ -67,9 +67,9 @@ export default async function handler(req, res) {
 
     const { reasoning, ...safeSignal } = signal;
 
-    // FIX PARA "undefined"
+    // FIX undefined signal
     if (!safeSignal.signal || safeSignal.signal === 'undefined') {
-      safeSignal.signal = livePrice > 4040 ? 'VENTA' : 'COMPRA'; // fallback simple
+      safeSignal.signal = 'ESPERAR';
     }
 
     // Forzar niveles
