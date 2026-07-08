@@ -1,25 +1,36 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI. Responde **EXCLUSIVAMENTE** con un JSON válido. Sin texto antes ni después.
+const SOLCLA_PROMPT = `Responde **ÚNICAMENTE** con un objeto JSON válido. Nada más. Ni introducción, ni explicación.
 
-**Obligatorio:**
-- "signal": debe ser exactamente uno de estos: "COMPRA", "VENTA", "COMPRA EN RETROCESO", "VENTA EN RETROCESO", "ESPERAR"
-- Siempre llena entry, entry_max, sl, tp1, tp2, tp3 con números reales.
-- Si es COMPRA: SL por debajo, TPs por encima.
-- Si es VENTA: SL por encima, TPs por debajo.
+{
+  "signal": "COMPRA",
+  "confidence": 68,
+  "riesgo": "NORMAL",
+  "entry": 4041.5,
+  "entry_max": 4044.0,
+  "sl": 4036.0,
+  "tp1": 4050.0,
+  "tp2": 4057.0,
+  "tp3": 4065.0,
+  "tp4": 0,
+  "tp5": 0,
+  "rr_ratio": "1:2.5",
+  "summary": "breve",
+  "contexto": "breve",
+  "evitar": "breve",
+  "escenario_compra": "breve",
+  "escenario_venta": "breve"
+}
 
-Precio actual: ${livePrice}
-
-Responde solo el JSON.`;
+Precio actual: ${livePrice}. Sesión: ${session || 'NEW YORK'}.`;
 
 function buildCandleBlock(candles, interval = '5m') {
-  const last30 = candles.slice(-30);
-  const label = interval === '15m' ? 'VELAS 15M' : 'VELAS 5M';
-  const lines = last30.map((c, i) => {
+  const last = candles.slice(-25);
+  const lines = last.map((c, i) => {
     const dir = c.close >= c.open ? '▲' : '▼';
-    return ` ${String(i + 1).padStart(2)}: O${Number(c.open).toFixed(2)} H${Number(c.high).toFixed(2)} L${Number(c.low).toFixed(2)} C${Number(c.close).toFixed(2)} ${dir}`;
+    return `${String(i+1).padStart(2)}: C${Number(c.close).toFixed(1)}`;
   });
-  return `\n${label}:\n${lines.join('\n')}\n`;
+  return `\nÚltimas velas: ${lines.join(" | ")}`;
 }
 
 export default async function handler(req, res) {
@@ -34,9 +45,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'API Key no configurada' });
 
-    const fullPrompt = SOLCLA_PROMPT.replace('${livePrice}', livePrice) + 
-      buildCandleBlock(candles, interval) +
-      (mktCtx ? `\n${mktCtx}` : '');
+    const fullPrompt = SOLCLA_PROMPT.replace('${livePrice}', livePrice) + buildCandleBlock(candles, interval);
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -47,37 +56,38 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        temperature: 0.2,
+        max_tokens: 800,
+        temperature: 0.3,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
 
     const data = await r.json();
-    let rawText = data.content?.[0]?.text || '';
+    let raw = data.content?.[0]?.text || '';
 
-    const start = rawText.indexOf('{');
-    const end = rawText.lastIndexOf('}');
+    // LIMPIEZA AGRESIVA
+    raw = raw.replace(/```json|```/g, '').trim();
+    let start = raw.indexOf('{');
+    let end = raw.lastIndexOf('}');
 
     if (start === -1 || end === -1) {
-      console.error("Respuesta cruda:", rawText);
-      return res.status(502).json({ error: 'La IA no devolvió JSON puro' });
+      console.error("Raw IA:", raw);
+      return res.status(502).json({ error: 'No se encontró JSON válido' });
     }
 
-    const jsonStr = rawText.substring(start, end + 1);
-    let signal = JSON.parse(jsonStr);
+    const jsonStr = raw.substring(start, end + 1);
+    const signal = JSON.parse(jsonStr);
 
     const { reasoning, ...safeSignal } = signal;
 
-    // Forzar signal válida si viene mal
-    const validSignals = ['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'];
-    if (!validSignals.includes(safeSignal.signal)) {
+    // Fallbacks
+    if (!safeSignal.signal || !['COMPRA','VENTA','COMPRA EN RETROCESO','VENTA EN RETROCESO','ESPERAR'].includes(safeSignal.signal)) {
       safeSignal.signal = 'ESPERAR';
     }
 
     res.json({ ok: true, signal: safeSignal });
   } catch (e) {
-    console.error(e);
+    console.error("Error:", e);
     res.status(500).json({ error: e.message });
   }
 }
