@@ -1,7 +1,6 @@
 export const config = { maxDuration: 30 };
 
 const SOLCLA_PROMPT = `Eres SOLCLA AI. Sos directa, operativa y buscás oportunidades reales de scalping en XAUUSD.
-
 **REGLAS CLAVE:**
 - Preferís dar COMPRA o VENTA cuando hay momentum, estructura clara o rechazo evidente. No te quedes callada si hay edge.
 - Solo usás ESPERAR cuando realmente no hay dirección ni confluencia clara.
@@ -9,7 +8,6 @@ const SOLCLA_PROMPT = `Eres SOLCLA AI. Sos directa, operativa y buscás oportuni
 - Confianza mínima: 60%. Sé honesta.
 - Siempre llenás todos los números: entry, entry_max, sl, tp1, tp2, tp3.
 - Tu prioridad es dar señales accionables de calidad. Calidad sobre cantidad, pero sin volverte conservadora.
-
 Respondé SOLO con JSON válido. Nada de texto extra.`;
 
 function buildCandleBlock(candles, interval = '5m') {
@@ -38,23 +36,22 @@ export default async function handler(req, res) {
     const { candles, livePrice, session, hora, mktCtx, memoryStats, mode, interval } = req.body || {};
     if (!candles?.length || !livePrice) return res.status(400).json({ error: 'Faltan datos' });
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'API Key no configurada' });
+    const apiKey = process.env.GROK_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'GROK_API_KEY no configurada' });
 
     const fullPrompt = SOLCLA_PROMPT + buildModeBlock(mode || 'scalping') +
       `\nPrecio actual: ${livePrice} | Sesión: ${session}\n` +
       buildCandleBlock(candles, interval || '5m') +
       (mktCtx ? `\n${mktCtx}` : '');
 
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'grok-4.5',
         max_tokens: 1000,
         temperature: 0.35,
         messages: [{ role: 'user', content: fullPrompt }]
@@ -66,17 +63,16 @@ export default async function handler(req, res) {
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.error("ANTHROPIC ERROR:", responseText.slice(0, 200));
-      return res.status(502).json({ error: 'Error de Anthropic, reintentá' });
+      console.error("GROK ERROR:", responseText.slice(0, 300));
+      return res.status(502).json({ error: 'Error de Grok, reintentá' });
     }
 
-    if (!r.ok) return res.status(502).json({ error: data.error?.message || 'Error API' });
+    if (!r.ok) return res.status(502).json({ error: data.error?.message || 'Error API Grok' });
 
-    const rawText = data.content?.[0]?.text || '';
+    const rawText = data.choices?.[0]?.message?.content || '';
     const start = rawText.indexOf('{');
     const end = rawText.lastIndexOf('}');
-
-    if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON válido' });
+    if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON válido de Grok' });
 
     const signal = JSON.parse(rawText.substring(start, end + 1));
     const { reasoning, ...safeSignal } = signal;
