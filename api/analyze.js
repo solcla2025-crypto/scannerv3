@@ -1,15 +1,16 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI. Sos decisiva, operativa y buscas oportunidades reales.
+const SOLCLA_PROMPT = `Eres SOLCLA AI. Sos decisiva, operativa y buscas oportunidades reales de scalping y day trading en XAU/USD.
 
-**REGLAS CLAVE:**
+REGLAS GENERALES:
 - Preferís dar COMPRA o VENTA cuando hay momentum o estructura clara.
-- Solo usás ESPERAR cuando el precio está en rango sin dirección clara.
-- Regla de distancia en scalping: < 10 pts = señal inmediata. 10-18 pts = RETROCESO.
-- Confianza mínima: 58%.
-- Siempre llenás todos los números: entry, entry_max, sl, tp1, tp2, tp3.
+- Solo usás ESPERAR cuando realmente no hay dirección.
+- Confianza mínima: 59%.
+- Siempre completá: entry, entry_max, sl, tp1, tp2, tp3, tp4, tp5.
+- Si el precio ya está dentro de la zona de entrada → da señal DIRECTA (no RETROCESO).
+- En sesión ASIA sé más selectiva, pero si hay setup claro igual da la señal.
 
-Responde SOLO con JSON válido.`;
+Responde ÚNICAMENTE con JSON válido.`;
 
 function buildCandleBlock(candles, interval = '5m') {
   const last30 = candles.slice(-30);
@@ -23,9 +24,25 @@ function buildCandleBlock(candles, interval = '5m') {
 
 function buildModeBlock(mode) {
   if (mode === 'day') {
-    return `\n═══ MODO DAY TRADING (15m) ═══\n`;
+    return `
+═══ MODO DAY TRADING (15m) ═══
+Pensá de forma ESTRUCTURAL, no de scalping.
+- Priorizá la tendencia dominante y los swings importantes.
+- Buscá zonas de soporte/resistencia claras y recorrido potencial más amplio.
+- Evitá señales solo por momentum de las últimas 5-8 velas.
+- Preferí setups con mejor R:R y mayor probabilidad de recorrido.
+- Sé más paciente que en scalping.
+`;
   }
-  return `\n═══ MODO SCALPING (5m) ═══\nBuscá oportunidades reales con momentum.\n`;
+
+  return `
+═══ MODO SCALPING (5m) ═══
+Pensá de forma TÁCTICA y rápida.
+- Buscá momentum claro y entradas precisas.
+- Si hay impulso y estructura a favor, da la señal.
+- Regla de distancia: < 10 puntos = señal directa. 10-18 puntos = podés usar RETROCESO.
+- Sé operativa, no te quedes en ESPERAR sin motivo fuerte.
+`;
 }
 
 export default async function handler(req, res) {
@@ -54,8 +71,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        temperature: 0.35,
+        max_tokens: 1100,
+        temperature: 0.34,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
@@ -65,8 +82,8 @@ export default async function handler(req, res) {
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.error("ANTHROPIC ERROR:", responseText.slice(0, 200));
-      return res.status(502).json({ error: 'Error de Anthropic, reintentá' });
+      console.error("ANTHROPIC ERROR:", responseText.slice(0, 250));
+      return res.status(502).json({ error: 'Error de Anthropic' });
     }
 
     if (!r.ok) return res.status(502).json({ error: data.error?.message || 'Error API' });
@@ -74,19 +91,17 @@ export default async function handler(req, res) {
     const rawText = data.content?.[0]?.text || '';
     const start = rawText.indexOf('{');
     const end = rawText.lastIndexOf('}');
-
     if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON válido' });
 
-    const signal = JSON.parse(rawText.substring(start, end + 1));
-    const { reasoning, ...safeSignal } = signal;
+    let signal = JSON.parse(rawText.substring(start, end + 1));
 
-    // Fixes de seguridad
-    safeSignal.confidence = safeSignal.confidence || 62;
-    if (!['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'].includes(safeSignal.signal)) {
-      safeSignal.signal = 'ESPERAR';
+    // Seguridad
+    signal.confidence = signal.confidence || 62;
+    if (!['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'].includes(signal.signal)) {
+      signal.signal = 'ESPERAR';
     }
 
-    res.json({ ok: true, signal: safeSignal });
+    res.json({ ok: true, signal });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
