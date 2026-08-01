@@ -2,6 +2,9 @@
 //  NEXUS QUANTUM  ·  Data Gateway
 //  Serverless proxy con datos reales de mercado y sistema de respaldo.
 //  Autor: Solcla 🔮
+//  FIX (31/07/2026): unificado el precio del ticker XAU con la misma fuente
+//  que usan las velas (Yahoo GC=F), para eliminar el desfase entre el precio
+//  mostrado/analizado y el instrumento sobre el que se calcula la señal.
 // ============================================================================
 //
 //  Endpoints:
@@ -12,7 +15,7 @@
 //
 //  Fuentes:
 //    BTC: Binance (primaria) → Kraken (respaldo)
-//    XAU: Yahoo Finance GC=F (primaria) → Stooq (respaldo)
+//    XAU: Yahoo Finance GC=F (primaria, TICKER Y VELAS) → gold-api (respaldo)
 // ============================================================================
 
 const YAHOO_HEADERS = {
@@ -53,7 +56,6 @@ function clampLimit(n) {
 // --- BTC -----------------------------------------------------------------
 
 async function fetchBTCCandles(interval, limit) {
-  // Fuente primaria: Binance
   try {
     const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=${limit}`;
     const data = await fetchJSON(url);
@@ -69,7 +71,6 @@ async function fetchBTCCandles(interval, limit) {
       }))
     };
   } catch (e1) {
-    // Fuente respaldo: Kraken
     try {
       const krakenInterval = { '1m':1,'5m':5,'15m':15,'30m':30,'1h':60,'4h':240,'1d':1440 }[interval] || 1;
       const url = `https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=${krakenInterval}`;
@@ -119,7 +120,6 @@ async function fetchBTCTicker() {
 // --- XAU -----------------------------------------------------------------
 
 async function fetchXAUCandles(interval, limit) {
-  // Fuente primaria: Yahoo Finance (Gold Futures GC=F)
   try {
     const range = YAHOO_RANGE[interval] || '1d';
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=${interval}&range=${range}`;
@@ -139,7 +139,6 @@ async function fetchXAUCandles(interval, limit) {
     if (candles.length < 5) throw new Error('Yahoo insufficient data');
     return { source: 'yahoo', candles: candles.slice(-limit) };
   } catch (e1) {
-    // Fuente respaldo: Stooq (retornos diarios/horarios)
     try {
       const stooqInterval = ['1m','5m','15m','30m','1h'].includes(interval) ? '5' : 'd';
       const url = `https://stooq.com/q/d/l/?s=xauusd&i=${stooqInterval}`;
@@ -162,19 +161,38 @@ async function fetchXAUCandles(interval, limit) {
 }
 
 async function fetchXAUTicker() {
+  // FIX: fuente primaria = Yahoo GC=F, la MISMA que usan las velas.
+  // Esto elimina el desfase entre el precio en vivo (header) y el precio
+  // sobre el que la IA calcula EMAs/SAR/zonas de entrada.
   try {
-    const data = await fetchJSON('https://api.gold-api.com/price/XAU');
-    const price = data.price;
-    if (!price) throw new Error('Gold-API empty');
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1m&range=1d`;
+    const data = await fetchJSON(url, { headers: YAHOO_HEADERS });
+    const meta = data.chart?.result?.[0]?.meta;
+    const price = meta?.regularMarketPrice;
+    if (!price) throw new Error('Yahoo meta empty');
     const spread = 0.35;
-    return { source: 'gold-api', bid: price - spread/2, ask: price + spread/2, price, spread, ts: Date.now() };
+    return {
+      source: 'yahoo-gcf',
+      bid: price - spread / 2,
+      ask: price + spread / 2,
+      price,
+      spread,
+      ts: Date.now()
+    };
   } catch (e1) {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1m&range=1d`;
-      const data = await fetchJSON(url, { headers: YAHOO_HEADERS });
-      const price = data.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if (!price) throw new Error('Yahoo meta empty');
-      return { source: 'yahoo', bid: price - 0.18, ask: price + 0.18, price, spread: 0.35, ts: Date.now() };
+      const data = await fetchJSON('https://api.gold-api.com/price/XAU');
+      const price = data.price;
+      if (!price) throw new Error('Gold-API empty');
+      const spread = 0.35;
+      return {
+        source: 'gold-api-fallback',
+        bid: price - spread / 2,
+        ask: price + spread / 2,
+        price,
+        spread,
+        ts: Date.now()
+      };
     } catch (e2) {
       throw new Error(`XAU ticker failure: ${e1.message} / ${e2.message}`);
     }
@@ -199,7 +217,6 @@ export default async function handler(req, res) {
       if (asset === 'BTC') payload = await fetchBTCTicker();
       else if (asset === 'XAU') payload = await fetchXAUTicker();
       else throw new Error('Asset not supported');
-      // ticker cache muy corta
       res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate=2');
     } else {
       let result;
