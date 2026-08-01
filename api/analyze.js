@@ -1,16 +1,24 @@
 export const config = { maxDuration: 30 };
 
-const SOLCLA_PROMPT = `Eres SOLCLA AI. Sos decisiva, operativa y buscas oportunidades reales de scalping y day trading en XAU/USD.
+const SOLCLA_PROMPT = `Eres SOLCLA AI. Sos directa, operativa y especializada en scalping de XAUUSD.
 
-REGLAS GENERALES:
-- Preferís dar COMPRA o VENTA cuando hay momentum o estructura clara.
+FILOSOFÍA:
+- Buscás oportunidades reales con momentum y estructura.
+- Preferís dar COMPRA o VENTA cuando hay edge claro.
 - Solo usás ESPERAR cuando realmente no hay dirección.
-- Confianza mínima: 59%.
-- Siempre completá: entry, entry_max, sl, tp1, tp2, tp3, tp4, tp5.
-- Si el precio ya está dentro de la zona de entrada → da señal DIRECTA (no RETROCESO).
-- En sesión ASIA sé más selectiva, pero si hay setup claro igual da la señal.
+- No sos conservadora. Tampoco tirás señales basura.
 
-Responde ÚNICAMENTE con JSON válido.`;
+REGLAS OPERATIVAS:
+- Confianza mínima: 60%.
+- Si el precio ya está dentro o muy cerca de la zona de entrada (< 8 pts) → señal DIRECTA (COMPRA o VENTA).
+- Si la zona de entrada está entre 8 y 18 pts de distancia → podés usar COMPRA EN RETROCESO o VENTA EN RETROCESO.
+- Más de 18 pts de distancia → preferí ESPERAR o señal de retroceso solo si la estructura es muy clara.
+- TP1 siempre debe ser el primer nivel real donde el precio puede frenarse (corto).
+- SL anclado a estructura visible, mínimo 5-6 pts.
+- Siempre completá: entry, entry_max, sl, tp1, tp2, tp3, tp4, tp5.
+- En sesión ASIA sé un poco más selectiva, pero si hay setup claro igual da la señal.
+
+Responde ÚNICAMENTE con JSON válido. Sin texto extra.`;
 
 function buildCandleBlock(candles, interval = '5m') {
   const last30 = candles.slice(-30);
@@ -23,25 +31,12 @@ function buildCandleBlock(candles, interval = '5m') {
 }
 
 function buildModeBlock(mode) {
-  if (mode === 'day') {
-    return `
-═══ MODO DAY TRADING (15m) ═══
-Pensá de forma ESTRUCTURAL, no de scalping.
-- Priorizá la tendencia dominante y los swings importantes.
-- Buscá zonas de soporte/resistencia claras y recorrido potencial más amplio.
-- Evitá señales solo por momentum de las últimas 5-8 velas.
-- Preferí setups con mejor R:R y mayor probabilidad de recorrido.
-- Sé más paciente que en scalping.
-`;
-  }
-
+  // Solo usamos Scalping en el lanzamiento
   return `
 ═══ MODO SCALPING (5m) ═══
-Pensá de forma TÁCTICA y rápida.
-- Buscá momentum claro y entradas precisas.
-- Si hay impulso y estructura a favor, da la señal.
-- Regla de distancia: < 10 puntos = señal directa. 10-18 puntos = podés usar RETROCESO.
-- Sé operativa, no te quedes en ESPERAR sin motivo fuerte.
+Pensá de forma táctica y rápida.
+Buscá momentum + estructura.
+Sé operativa.
 `;
 }
 
@@ -55,7 +50,7 @@ export default async function handler(req, res) {
     if (!candles?.length || !livePrice) return res.status(400).json({ error: 'Faltan datos' });
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'API Key no configurada' });
+    if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY no configurada' });
 
     const fullPrompt = SOLCLA_PROMPT + buildModeBlock(mode || 'scalping') +
       `\nPrecio actual: ${livePrice} | Sesión: ${session}\n` +
@@ -71,8 +66,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1100,
-        temperature: 0.34,
+        max_tokens: 1000,
+        temperature: 0.32,
         messages: [{ role: 'user', content: fullPrompt }]
       })
     });
@@ -82,8 +77,8 @@ export default async function handler(req, res) {
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.error("ANTHROPIC ERROR:", responseText.slice(0, 250));
-      return res.status(502).json({ error: 'Error de Anthropic' });
+      console.error("ANTHROPIC ERROR:", responseText.slice(0, 300));
+      return res.status(502).json({ error: 'Error de Anthropic, reintentá' });
     }
 
     if (!r.ok) return res.status(502).json({ error: data.error?.message || 'Error API' });
@@ -93,15 +88,16 @@ export default async function handler(req, res) {
     const end = rawText.lastIndexOf('}');
     if (start === -1 || end === -1) return res.status(502).json({ error: 'Sin JSON válido' });
 
-    let signal = JSON.parse(rawText.substring(start, end + 1));
+    const signal = JSON.parse(rawText.substring(start, end + 1));
+    const { reasoning, ...safeSignal } = signal;
 
     // Seguridad
-    signal.confidence = signal.confidence || 62;
-    if (!['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'].includes(signal.signal)) {
-      signal.signal = 'ESPERAR';
+    safeSignal.confidence = safeSignal.confidence || 62;
+    if (!['COMPRA', 'VENTA', 'COMPRA EN RETROCESO', 'VENTA EN RETROCESO', 'ESPERAR'].includes(safeSignal.signal)) {
+      safeSignal.signal = 'ESPERAR';
     }
 
-    res.json({ ok: true, signal });
+    res.json({ ok: true, signal: safeSignal });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
